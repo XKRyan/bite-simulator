@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101724" />
     <title>BITE LAB｜格斗机器人武器模拟</title>
-    <link rel="stylesheet" href="styles.css?v=1.0.0" />
+    <link rel="stylesheet" href="styles.css?v=1.1.0" />
   </head>
   <body>
     <div class="app-shell" id="appShell">
@@ -51,6 +51,7 @@
             </label>
             <div class="inline-action-row"><button id="applyRobotPreset" class="button primary" type="button">套用量级 + 推荐靶子</button></div>
             <p id="presetReadout" class="microcopy">1.36 kg：双 P2306 4S 降额示例；行驶默认为双 Blitz Lite 1604 2850KV + 29.16:1（4S 厂家测功基准）。</p>
+            <p id="presetMassStatus" class="parametric-warning hidden" role="status"></p>
             <p id="geometryScaleWarning" class="parametric-warning hidden" role="status"></p>
           </section>
 
@@ -178,10 +179,10 @@
                 <div class="input-wrap"><input data-param="shovelOffsetY" type="number" step="0.01" /><b>mm</b></div>
               </label>
             </div>
-            <div class="two-col advanced-only">
+            <div class="two-col">
               <label class="field">
                 <span>叉子质量 <em>转动惯量按当前 DXF / 线段几何推导</em></span>
-                <div class="input-wrap"><input data-param="forkMass" type="number" value="0.03" step="0.001" min="0.0001" /><b>kg</b></div>
+                <div class="input-wrap"><input data-param="forkMass" type="number" value="0.03" step="any" min="0.000001" /><b>kg</b></div>
               </label>
             </div>
             <div class="two-col geometry-radius-row">
@@ -243,7 +244,7 @@
               </label>
               <label class="field">
                 <span>武器旋转组件质量 <em>实测 / 等效</em></span>
-                <div class="input-wrap"><input data-param="weaponMass" type="number" step="0.001" min="0.000001" /><b>kg</b></div>
+                <div class="input-wrap"><input data-param="weaponMass" type="number" step="any" min="0.000001" /><b>kg</b></div>
               </label>
               <label class="field">
                 <span>武器电机 KV</span>
@@ -687,7 +688,7 @@
           <div><dt>收敛与回放</dt><dd>未来若启用连续材料删除，必须在同一固定时间步用相邻两档子步重复求解，删料、材料功、接触身份和终态任一不收敛都要回滚并停止；当前正式路径不会尝试删料。播放前先生成固定步长轨迹，播放、单步和进度条只读取已完成帧。</dd></div>
         </dl>
           <p class="microcopy">武器与行驶均按所选“真实加速 / 设定初速”模式起步。“高级参数（仅显示）”只展开或收起输入，不重置时间，也不切换求解律：已填的效率、有效输出系数、折扣、抓地、相电流限值、摩擦修正、恢复系数和刚体上限能量系数始终参与同一物理模型。0 A 表示没有可核验的相电流上限，不施加人为电流限矩；厂家桨测的电池侧电流不会被当作相电流。</p>
-        <p class="microcopy">武器碰撞使用已解析 DXF 的最大闭合外轮廓；孔、内圆与未闭合构造线不参与实体碰撞。若未来材料去除通过连续接触与收敛验证并被启用，只能归因于图纸识别出的真实迎击牙瓣；当前零删料路径不会删除材料。预测距离只作接近查询，正间隙不施力、不计命中或 bite。</p>
+        <p class="microcopy">武器碰撞使用严格解析的单一外环减孔实体；孔与内圆保留为空腔边界，不会被三角化填实。开放轮廓、多个独立外环、自交或非平面几何会被拒绝。若未来材料去除通过连续接触与收敛验证并被启用，只能归因于图纸识别出的真实迎击牙瓣；当前零删料路径不会删除材料。预测距离只作接近查询，正间隙不施力、不计命中或 bite。</p>
         <p class="microcopy">局部材料模型是二维工程估算，不追踪裂纹扩展、刀刃磨损、温升、三维弯曲或应变率完整本构；材料功也不能直接解读为最终裂纹长度、真实损伤或赛场安全结论。刚体上限尤其不应作为真实击飞预测。</p>
         <button class="button primary" data-close-modal type="button">继续调参</button>
       </section>
@@ -698,6 +699,6 @@
     <script src="assets/polygon-clipping/polygon-clipping-0.15.7.umd.min.js"></script>
     <script src="assets/earcut/earcut-3.2.3.min.js"></script>
     <script src="assets/rapier/rapier-loader-0.20.0.global.js"></script>
-    <script src="app.js?v=1.0.0"></script>
+    <script src="app.js?v=1.1.0"></script>
   </body>
 </html>

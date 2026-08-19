@@ -20,6 +20,10 @@
   // CAD collision samples are taken directly from the joined DXF outer
   // boundary.  This is a maximum chord length, not an artificial tip radius.
   const CAD_COLLISION_CHORD = 0.0012;
+  // Only floating-point round-off may be normalised when joining separate DXF
+  // entities.  This is 0.0001 mm, far below the independent 0.08 mm physics
+  // penetration gate; larger drawing gaps are rejected instead of bridged.
+  const CAD_ENDPOINT_EQ_EPS = 1e-7;
   // A small positional separation keeps a high-speed CAD edge visibly outside
   // a target after a time-of-impact event. It is deliberately much smaller
   // than any UI geometry dimension and is not reported as material bite.
@@ -150,7 +154,7 @@
     // 0.5 ms. This keeps shorter engineering runs physically identical to the
     // corresponding prefix of a 4 s run.
     simulationDuration: 4,
-    weaponInitialAngle: 0,
+    weaponInitialAngle: 75,
     tipRadius: 55,
     toothCount: 1,
     // UI unit: kg·mm². computeMetrics() converts it to kg·m² internally.
@@ -404,14 +408,29 @@
     custom: { label: '自定义', source: '用户输入', condition: '请优先填写实测/厂家数据表扭矩，再检查轮端牵引力是否被抓地上限限制。' },
   });
 
+  const PRESET_MASS_NEEDS_INPUT = Object.freeze({
+    weaponKg: null,
+    forkKg: null,
+    status: 'needs-input',
+    source: '未提供可审计的完整旋转组件与活动叉质量',
+    condition: '必须按当前实物称重或提供可追溯等效质量后才能求解；不会继承上一预设，也不会用 I/R² 反推。',
+  });
+  const PRESET_MASS_136KG = Object.freeze({
+    weaponKg: DEFAULT_WEAPON_MASS,
+    forkKg: DEFAULTS.forkMass,
+    status: 'ready',
+    source: '内置 1.36 kg 基线：武器按 DXF 净面积估算，活动叉按已录入质量',
+    condition: '武器估算不含轮毂、紧固件、带轮或轴；实机应以完整旋转组件称重值覆盖。',
+  });
+
   const ROBOT_PRESETS = Object.freeze({
-    '150g': { label: '150 g 微型', robotMass: 0.15, voltage: 7.4, weaponMotorPreset: 'custom', weaponKv: 8000, weaponMotorCount: 1, weaponMotorPower: 35, weaponMotorCurrent: 6, weaponMotorEfficiency: 78, weaponOutputFactor: 70, weaponGearRatio: 1.8, weaponInertia: 5, tipRadius: 25, toothCount: 1, driveMotorPreset: 'micro1103', driveKv: 8000, driveMotorCount: 2, driveMotorPower: 18, driveMotorTorque: 0.006, driveGearRatio: 24, driveEfficiency: 78, wheelDiameter: 22, targetMaterial: 'hdpe', targetLength: 60, targetThickness: 6, targetMass: 0.0051894, targetMassMode: 'geometry', targetCenterY: 0, restitution: 0.5 },
-    '220g': { label: '220 g 蚂蚁', robotMass: 0.22, voltage: 7.4, weaponMotorPreset: 'custom', weaponKv: 6500, weaponMotorCount: 1, weaponMotorPower: 55, weaponMotorCurrent: 8, weaponMotorEfficiency: 80, weaponOutputFactor: 72, weaponGearRatio: 1.7, weaponInertia: 8, tipRadius: 28, toothCount: 1, driveMotorPreset: 'micro1103', driveKv: 6500, driveMotorCount: 2, driveMotorPower: 22, driveMotorTorque: 0.007, driveGearRatio: 22, driveEfficiency: 79, wheelDiameter: 24, targetMaterial: 'hdpe', targetLength: 70, targetThickness: 8, targetMass: 0.0107632, targetMassMode: 'geometry', targetCenterY: 0, restitution: 0.5 },
-    '454g': { label: '454 g 甲虫', robotMass: 0.454, voltage: 11.1, weaponMotorPreset: 'custom', weaponKv: 3950, weaponMotorCount: 1, weaponMotorPower: 120, weaponMotorCurrent: 13, weaponMotorEfficiency: 82, weaponOutputFactor: 74, weaponGearRatio: 2.5, weaponInertia: 40, tipRadius: 40, toothCount: 1, driveMotorPreset: 'beetle1404', driveKv: 5000, driveMotorCount: 2, driveMotorPower: 40, driveMotorTorque: 0.015, driveGearRatio: 24, driveEfficiency: 80, wheelDiameter: 32, targetMaterial: 'hdpe', targetLength: 100, targetThickness: 10, targetMass: 0.02883, targetMassMode: 'geometry', targetCenterY: 0, restitution: 0.45 },
-    '1.36kg': { label: '1.36 kg 羽量', robotMass: 1.36, voltage: 14.8, weaponMotorPreset: 'dual2306', weaponKv: 1750, weaponMotorCount: 2, weaponMotorPower: 250, weaponMotorCurrent: 18, weaponMotorEfficiency: 85, weaponOutputFactor: 75, weaponGearRatio: 2.1, weaponInertia: 160, weaponMass: DEFAULT_WEAPON_MASS, tipRadius: 55, toothCount: 1, driveMotorPreset: 'dualBlitzLite1604Dyno4S', driveKv: 2850, driveMotorCount: 2, driveMotorPower: 70, driveMotorTorque: 0.028807, driveMotorCurrent: 0, driveGearRatio: 29.16, driveEfficiency: 100, wheelDiameter: 43.2, targetMaterial: 'hdpe', targetLength: 140, targetThickness: 16, targetMass: 0.0861056, targetMassMode: 'geometry', targetCenterY: 0, restitution: 0.22 },
-    '5lb': { label: '5 lbs / 2.27 kg（4S 示例）', robotMass: 2.268, voltage: 14.8, weaponMotorPreset: 'single2212', weaponKv: 1400, weaponMotorCount: 1, weaponMotorPower: 509.12, weaponMotorCurrent: 20, weaponMotorEfficiency: 80, weaponOutputFactor: 70, weaponGearRatio: 2.5, weaponInertia: 2500, tipRadius: 75, toothCount: 1, driveMotorPreset: 'custom', driveKv: 1750, driveMotorCount: 2, driveMotorPower: 140, driveMotorTorque: 0.09, driveGearRatio: 22, driveEfficiency: 83, wheelDiameter: 50, targetMaterial: 'aluminum', targetLength: 190, targetThickness: 20, targetMass: 0.513, targetMassMode: 'geometry', targetCenterY: 0, restitution: 0.3 },
-    '13.6kg': { label: '13.6 kg Feather（6S / 9 s 上限）', robotMass: 13.6, voltage: 24, weaponMotorPreset: 'single2812', weaponKv: 900, weaponMotorCount: 1, weaponMotorPower: 1191, weaponMotorCurrent: 30, weaponMotorEfficiency: 80, weaponOutputFactor: 70, weaponGearRatio: 3.2, weaponInertia: 25000, tipRadius: 130, toothCount: 1, driveMotorPreset: 'custom', driveKv: 1300, driveMotorCount: 2, driveMotorPower: 280, driveMotorTorque: 0.21, driveGearRatio: 19, driveEfficiency: 85, wheelDiameter: 75, targetMaterial: 'mildSteel', targetLength: 350, targetThickness: 30, targetMass: 6.594, targetMassMode: 'geometry', targetCenterY: 0, restitution: 0.16 },
-    '110kg': { label: '110 kg Heavyweight（参数几何示例）', robotMass: 110, voltage: 44.4, weaponMotorPreset: 'custom', weaponKv: 190, weaponMotorCount: 2, weaponMotorPower: 5000, weaponMotorCurrent: 130, weaponMotorEfficiency: 88, weaponOutputFactor: 78, weaponGearRatio: 3.5, weaponInertia: 550000, tipRadius: 250, toothCount: 1, paramWeaponEnabled: true, paramToothLength: 250, paramToothCount: 1, paramForkEnabled: true, paramForkTipDistance: 330, driveMotorPreset: 'heavy6374', driveKv: 190, driveMotorCount: 4, driveMotorPower: 2000, driveMotorTorque: 2.6, driveGearRatio: 12, driveEfficiency: 88, wheelDiameter: 150, targetMaterial: 'mildSteel', targetLength: 700, targetThickness: 60, targetMass: 65.94, targetMassMode: 'geometry', targetSceneX: 650, targetCenterY: 0, restitution: 0.12 },
+    '150g': { label: '150 g 微型', mass: PRESET_MASS_NEEDS_INPUT, robotMass: 0.15, voltage: 7.4, weaponMotorPreset: 'custom', weaponKv: 8000, weaponMotorCount: 1, weaponMotorPower: 35, weaponMotorCurrent: 6, weaponMotorEfficiency: 78, weaponOutputFactor: 70, weaponGearRatio: 1.8, weaponInertia: 5, tipRadius: 25, toothCount: 1, driveMotorPreset: 'micro1103', driveKv: 8000, driveMotorCount: 2, driveMotorPower: 18, driveMotorTorque: 0.006, driveGearRatio: 24, driveEfficiency: 78, wheelDiameter: 22, targetMaterial: 'hdpe', targetLength: 60, targetThickness: 6, targetMass: 0.0051894, targetMassMode: 'geometry', targetCenterY: 0 },
+    '220g': { label: '220 g 蚂蚁', mass: PRESET_MASS_NEEDS_INPUT, robotMass: 0.22, voltage: 7.4, weaponMotorPreset: 'custom', weaponKv: 6500, weaponMotorCount: 1, weaponMotorPower: 55, weaponMotorCurrent: 8, weaponMotorEfficiency: 80, weaponOutputFactor: 72, weaponGearRatio: 1.7, weaponInertia: 8, tipRadius: 28, toothCount: 1, driveMotorPreset: 'micro1103', driveKv: 6500, driveMotorCount: 2, driveMotorPower: 22, driveMotorTorque: 0.007, driveGearRatio: 22, driveEfficiency: 79, wheelDiameter: 24, targetMaterial: 'hdpe', targetLength: 70, targetThickness: 8, targetMass: 0.0107632, targetMassMode: 'geometry', targetCenterY: 0 },
+    '454g': { label: '454 g 甲虫', mass: PRESET_MASS_NEEDS_INPUT, robotMass: 0.454, voltage: 11.1, weaponMotorPreset: 'custom', weaponKv: 3950, weaponMotorCount: 1, weaponMotorPower: 120, weaponMotorCurrent: 13, weaponMotorEfficiency: 82, weaponOutputFactor: 74, weaponGearRatio: 2.5, weaponInertia: 40, tipRadius: 40, toothCount: 1, driveMotorPreset: 'beetle1404', driveKv: 5000, driveMotorCount: 2, driveMotorPower: 40, driveMotorTorque: 0.015, driveGearRatio: 24, driveEfficiency: 80, wheelDiameter: 32, targetMaterial: 'hdpe', targetLength: 100, targetThickness: 10, targetMass: 0.02883, targetMassMode: 'geometry', targetCenterY: 0 },
+    '1.36kg': { label: '1.36 kg 羽量', mass: PRESET_MASS_136KG, robotMass: 1.36, voltage: 14.8, weaponMotorPreset: 'dual2306', weaponKv: 1750, weaponMotorCount: 2, weaponMotorPower: 250, weaponMotorCurrent: 18, weaponMotorEfficiency: 85, weaponOutputFactor: 75, weaponGearRatio: 2.1, weaponInertia: 160, weaponInitialAngle: 75, tipRadius: 55, toothCount: 1, driveMotorPreset: 'dualBlitzLite1604Dyno4S', driveKv: 2850, driveMotorCount: 2, driveMotorPower: 70, driveMotorTorque: 0.028807, driveMotorCurrent: 0, driveGearRatio: 29.16, driveEfficiency: 100, wheelDiameter: 43.2, targetMaterial: 'hdpe', targetLength: 140, targetThickness: 16, targetMass: 0.0861056, targetMassMode: 'geometry', targetCenterY: 0 },
+    '5lb': { label: '5 lbs / 2.27 kg（4S 示例）', mass: PRESET_MASS_NEEDS_INPUT, robotMass: 2.268, voltage: 14.8, weaponMotorPreset: 'single2212', weaponKv: 1400, weaponMotorCount: 1, weaponMotorPower: 509.12, weaponMotorCurrent: 20, weaponMotorEfficiency: 80, weaponOutputFactor: 70, weaponGearRatio: 2.5, weaponInertia: 2500, tipRadius: 75, toothCount: 1, driveMotorPreset: 'custom', driveKv: 1750, driveMotorCount: 2, driveMotorPower: 140, driveMotorTorque: 0.09, driveGearRatio: 22, driveEfficiency: 83, wheelDiameter: 50, targetMaterial: 'aluminum', targetLength: 190, targetThickness: 20, targetMass: 0.513, targetMassMode: 'geometry', targetCenterY: 0 },
+    '13.6kg': { label: '13.6 kg Feather（6S / 9 s 上限）', mass: PRESET_MASS_NEEDS_INPUT, robotMass: 13.6, voltage: 24, weaponMotorPreset: 'single2812', weaponKv: 900, weaponMotorCount: 1, weaponMotorPower: 1191, weaponMotorCurrent: 30, weaponMotorEfficiency: 80, weaponOutputFactor: 70, weaponGearRatio: 3.2, weaponInertia: 25000, tipRadius: 130, toothCount: 1, driveMotorPreset: 'custom', driveKv: 1300, driveMotorCount: 2, driveMotorPower: 280, driveMotorTorque: 0.21, driveGearRatio: 19, driveEfficiency: 85, wheelDiameter: 75, targetMaterial: 'mildSteel', targetLength: 350, targetThickness: 30, targetMass: 6.594, targetMassMode: 'geometry', targetCenterY: 0 },
+    '110kg': { label: '110 kg Heavyweight（参数几何示例）', mass: PRESET_MASS_NEEDS_INPUT, robotMass: 110, voltage: 44.4, weaponMotorPreset: 'custom', weaponKv: 190, weaponMotorCount: 2, weaponMotorPower: 5000, weaponMotorCurrent: 130, weaponMotorEfficiency: 88, weaponOutputFactor: 78, weaponGearRatio: 3.5, weaponInertia: 550000, tipRadius: 250, toothCount: 1, paramWeaponEnabled: true, paramToothLength: 250, paramToothCount: 1, paramForkEnabled: true, paramForkTipDistance: 330, driveMotorPreset: 'heavy6374', driveKv: 190, driveMotorCount: 4, driveMotorPower: 2000, driveMotorTorque: 2.6, driveGearRatio: 12, driveEfficiency: 88, wheelDiameter: 150, targetMaterial: 'mildSteel', targetLength: 700, targetThickness: 60, targetMass: 65.94, targetMassMode: 'geometry', targetSceneX: 650, targetCenterY: 0 },
   });
 
   const state = {
@@ -521,45 +540,12 @@
     return [];
   }
 
-  function pointNear(a, b, tolerance = .00035) { return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance; }
+  function pointNear(a, b, tolerance = CAD_ENDPOINT_EQ_EPS) { return Math.hypot(a.x - b.x, a.y - b.y) <= tolerance; }
   function buildSolidLoops(paths) {
-    const closed = [];
-    const pieces = [];
-    paths.forEach((path) => {
-      const points = samplePath(path);
-      if (points.length < 2) return;
-      if (path.type === 'circle' || path.closed || pointNear(points[0], points[points.length - 1])) { closed.push(points); return; }
-      pieces.push({ points, used: false });
-    });
-    // DXF commonly stores a boundary as individual LINE/ARC entities.  Rejoin
-    // their endpoints for rendering only; simulation keeps the original CAD
-    // entities untouched.
-    for (const seed of pieces) {
-      if (seed.used) continue;
-      seed.used = true;
-      const loop = [...seed.points];
-      let end = loop[loop.length - 1];
-      for (let guard = 0; guard < pieces.length + 2; guard += 1) {
-        if (pointNear(end, loop[0]) && loop.length > 3) { closed.push(loop); break; }
-        let match = null; let reverse = false;
-        for (const candidate of pieces) {
-          if (candidate.used) continue;
-          const first = candidate.points[0]; const last = candidate.points[candidate.points.length - 1];
-          if (pointNear(end, first)) { match = candidate; break; }
-          if (pointNear(end, last)) { match = candidate; reverse = true; break; }
-        }
-        if (!match) break;
-        match.used = true;
-        const next = reverse ? [...match.points].reverse() : match.points;
-        loop.push(...next.slice(1));
-        end = loop[loop.length - 1];
-      }
-    }
-    return closed.filter((loop) => loop.length >= 3);
+    return buildCollisionTopology(paths).loops;
   }
   function solidLoopsFor(drawing) {
-    if (!drawing._solidLoops) drawing._solidLoops = buildSolidLoops(drawing.paths);
-    return drawing._solidLoops;
+    return drawingSolid(drawing).rings;
   }
   function drawSolidLoops(ctx, drawing, transform, fillStyle) {
     const loops = solidLoopsFor(drawing);
@@ -756,12 +742,24 @@
   }
   function activeForkBodyPoints() {
     if (state.params.paramForkEnabled) return parameterForkGeometry().points;
-    return state.drawings.shovel.paths.flatMap(samplePathForCollision).map(forkBodyLocal);
+    return activeForkSolidGeometry().outer;
+  }
+  function activeForkSolidGeometry() {
+    if (state.params.paramForkEnabled) {
+      const outer = parameterForkGeometry().points;
+      return { outer, holes: [], rings: [outer], netArea: 0 };
+    }
+    const solid = drawingSolid(state.drawings.shovel);
+    const rings = solid.rings.map((ring) => ring.map(forkBodyLocal));
+    return {
+      outer: rings[0] || [],
+      holes: rings.slice(1),
+      rings,
+      netArea: solid.netArea,
+    };
   }
   function activeForkSolidLoop() {
-    if (state.params.paramForkEnabled) return parameterForkGeometry().points;
-    const sourceLoop = largestCollisionLoopFor(state.drawings.shovel);
-    return sourceLoop ? sourceLoop.map(forkBodyLocal) : [];
+    return activeForkSolidGeometry().outer;
   }
   function normaliseSignedAngle(angle) {
     return Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -890,48 +888,173 @@
     }
     return [];
   }
-  function buildCollisionLoops(paths) {
-    const closed = []; const pieces = [];
-    paths.forEach((path) => {
-      const points = samplePathForCollision(path);
-      if (points.length < 2) return;
-      if (path.type === 'circle' || path.closed || pointNear(points[0], points[points.length - 1])) { closed.push(points); return; }
-      pieces.push({ points, used: false });
+  function buildCollisionTopology(paths) {
+    const loops = []; const pieces = []; const openChains = []; const ambiguousJunctions = []; const degenerateEntities = [];
+    let maxEndpointAdjustment = 0;
+    paths.forEach((path, pathIndex) => {
+      const sampled = samplePathForCollision(path);
+      if (sampled.length < 2) { degenerateEntities.push({ pathIndex, reason: '少于两个采样点' }); return; }
+      if (path.type === 'circle' || path.closed) {
+        const points = pointNear(sampled[0], sampled[sampled.length - 1]) ? sampled.slice(0, -1) : sampled;
+        if (points.length >= 3) loops.push(points);
+        else degenerateEntities.push({ pathIndex, reason: '闭合实体不足三个边界点' });
+        return;
+      }
+      if (pointNear(sampled[0], sampled[sampled.length - 1])) {
+        maxEndpointAdjustment = Math.max(maxEndpointAdjustment, length(subtract(sampled[0], sampled[sampled.length - 1])));
+        const points = sampled.slice(0, -1);
+        if (points.length >= 3) loops.push(points);
+        else degenerateEntities.push({ pathIndex, reason: '近闭合实体不足三个边界点' });
+        return;
+      }
+      pieces.push({ points: sampled, pathIndex, used: false });
     });
     for (const seed of pieces) {
       if (seed.used) continue;
       seed.used = true;
-      const loop = [...seed.points]; let end = loop[loop.length - 1];
+      const chain = [...seed.points]; const sourcePathIndexes = [seed.pathIndex];
+      let closed = false;
       for (let guard = 0; guard < pieces.length + 2; guard += 1) {
-        if (pointNear(end, loop[0]) && loop.length > 3) { closed.push(loop); break; }
-        let match = null; let reverse = false;
-        for (const candidate of pieces) {
-          if (candidate.used) continue;
-          const first = candidate.points[0]; const last = candidate.points[candidate.points.length - 1];
-          if (pointNear(end, first)) { match = candidate; break; }
-          if (pointNear(end, last)) { match = candidate; reverse = true; break; }
+        const end = chain[chain.length - 1];
+        if (pointNear(end, chain[0]) && chain.length > 3) {
+          maxEndpointAdjustment = Math.max(maxEndpointAdjustment, length(subtract(end, chain[0])));
+          const points = pointNear(chain[0], chain[chain.length - 1]) ? chain.slice(0, -1) : chain;
+          if (points.length >= 3) loops.push(points);
+          else degenerateEntities.push({ sourcePathIndexes: [...sourcePathIndexes], reason: '拼接闭环不足三个边界点' });
+          closed = true;
+          break;
         }
-        if (!match) break;
-        match.used = true;
-        const next = reverse ? [...match.points].reverse() : match.points;
-        loop.push(...next.slice(1)); end = loop[loop.length - 1];
+        const candidates = [];
+        pieces.forEach((candidate) => {
+          if (candidate.used) return;
+          const first = candidate.points[0]; const last = candidate.points[candidate.points.length - 1];
+          if (pointNear(end, first)) candidates.push({ candidate, reverse: false, gap: length(subtract(end, first)) });
+          if (pointNear(end, last)) candidates.push({ candidate, reverse: true, gap: length(subtract(end, last)) });
+        });
+        if (candidates.length !== 1) {
+          if (candidates.length > 1) ambiguousJunctions.push({ point: point(end.x, end.y), sourcePathIndexes: [...sourcePathIndexes], candidateCount: candidates.length });
+          break;
+        }
+        const { candidate, reverse, gap } = candidates[0];
+        candidate.used = true; sourcePathIndexes.push(candidate.pathIndex);
+        maxEndpointAdjustment = Math.max(maxEndpointAdjustment, gap);
+        const next = reverse ? [...candidate.points].reverse() : candidate.points;
+        chain.push(...next.slice(1));
+      }
+      if (!closed) {
+        const start = chain[0]; const end = chain[chain.length - 1];
+        const otherEndpoints = pieces
+          .filter((candidate) => !sourcePathIndexes.includes(candidate.pathIndex))
+          .flatMap((candidate) => [candidate.points[0], candidate.points[candidate.points.length - 1]]);
+        const nearestGap = otherEndpoints.reduce((minimum, candidate) => Math.min(minimum, length(subtract(end, candidate))), length(subtract(end, start)));
+        openChains.push({ start, end, sourcePathIndexes, nearestGap });
       }
     }
-    return closed.map((loop) => pointNear(loop[0], loop[loop.length - 1]) ? loop.slice(0, -1) : loop).filter((loop) => loop.length >= 3);
+    return { loops, openChains, ambiguousJunctions, degenerateEntities, maxEndpointAdjustment };
   }
+  function buildCollisionLoops(paths) { return buildCollisionTopology(paths).loops; }
   function polygonArea(points) {
     return points.reduce((area, current, index) => {
       const next = points[(index + 1) % points.length];
       return area + current.x * next.y - current.y * next.x;
     }, 0) / 2;
   }
+  function topologySegmentsIntersect(a, b, c, d) {
+    const orientation = (left, right, sample) => cross(subtract(right, left), subtract(sample, left));
+    const abC = orientation(a, b, c); const abD = orientation(a, b, d);
+    const cdA = orientation(c, d, a); const cdB = orientation(c, d, b);
+    if (abC * abD < 0 && cdA * cdB < 0) return true;
+    return pointSegmentDistance(c, a, b) <= CAD_ENDPOINT_EQ_EPS
+      || pointSegmentDistance(d, a, b) <= CAD_ENDPOINT_EQ_EPS
+      || pointSegmentDistance(a, c, d) <= CAD_ENDPOINT_EQ_EPS
+      || pointSegmentDistance(b, c, d) <= CAD_ENDPOINT_EQ_EPS;
+  }
+  function ringSelfIntersects(ring) {
+    for (let left = 0; left < ring.length; left += 1) {
+      const leftNext = (left + 1) % ring.length;
+      for (let right = left + 1; right < ring.length; right += 1) {
+        const rightNext = (right + 1) % ring.length;
+        if (left === right || leftNext === right || rightNext === left) continue;
+        if (left === 0 && rightNext === 0) continue;
+        if (topologySegmentsIntersect(ring[left], ring[leftNext], ring[right], ring[rightNext])) return true;
+      }
+    }
+    return false;
+  }
+  function ringsTouchOrIntersect(leftRing, rightRing) {
+    return leftRing.some((start, leftIndex) => rightRing.some((otherStart, rightIndex) => topologySegmentsIntersect(
+      start,
+      leftRing[(leftIndex + 1) % leftRing.length],
+      otherStart,
+      rightRing[(rightIndex + 1) % rightRing.length],
+    )));
+  }
+  function dxfValidationError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+  }
+  function drawingSolid(drawing, { strict = true } = {}) {
+    if (drawing._solid) {
+      if (strict && drawing._solid.failures.length) {
+        throw dxfValidationError(
+          drawing._solid.errorCode || 'DXF_INVALID_TOPOLOGY',
+          `DXF 轮廓无法无损建立二维实体：${drawing._solid.failures.join('；')}`,
+        );
+      }
+      return drawing._solid;
+    }
+    const topology = buildCollisionTopology(drawing.paths);
+    const failures = []; const failureCodes = [];
+    const fail = (code, message) => { failureCodes.push(code); failures.push(message); };
+    if (topology.degenerateEntities.length) fail('DXF_DEGENERATE_ENTITY', `存在 ${topology.degenerateEntities.length} 个退化轮廓实体`);
+    if (topology.ambiguousJunctions.length) fail('DXF_AMBIGUOUS_TOPOLOGY', `存在 ${topology.ambiguousJunctions.length} 个连接关系不唯一的端点`);
+    if (topology.openChains.length) {
+      const nearest = Math.min(...topology.openChains.map((chain) => chain.nearestGap));
+      fail('DXF_OPEN_CONTOUR', `存在 ${topology.openChains.length} 条开放轮廓（最近端点间隙 ${format(nearest * 1000, 6)} mm）`);
+    }
+    const allRings = topology.loops
+      .map((ring) => removeDuplicateLoopPoints(ring).points)
+      .filter((ring) => ring.length >= 3);
+    allRings.forEach((ring, index) => { if (ringSelfIntersects(ring)) fail('DXF_SELF_INTERSECTION', `第 ${index + 1} 个闭环自交`); });
+    const rings = allRings
+      .filter((ring) => Math.abs(polygonArea(ring)) > 1e-14)
+      .sort((left, right) => Math.abs(polygonArea(right)) - Math.abs(polygonArea(left)));
+    if (!rings.length) fail('DXF_NO_CLOSED_CONTOUR', '没有可构成实体的闭合轮廓');
+    const outer = rings[0] || null; const holes = []; const independent = [];
+    if (outer) {
+      rings.slice(1).forEach((ring) => {
+        if (ringsTouchOrIntersect(outer, ring)) fail('DXF_INTERSECTING_RINGS', '外环与内环相交或相切');
+        else if (pointInsideSimpleLoop(ring[0], outer)) holes.push(ring);
+        else independent.push(ring);
+      });
+      if (independent.length) fail('DXF_MULTIPLE_OUTERS', `存在 ${independent.length + 1} 个彼此独立的外环；当前只支持一个刚性实体`);
+      for (let left = 0; left < holes.length; left += 1) {
+        for (let right = left + 1; right < holes.length; right += 1) {
+          if (ringsTouchOrIntersect(holes[left], holes[right])) fail('DXF_INTERSECTING_RINGS', '孔轮廓相交或相切');
+          else if (pointInsideSimpleLoop(holes[left][0], holes[right]) || pointInsideSimpleLoop(holes[right][0], holes[left])) fail('DXF_NESTED_HOLES', '当前不支持孔中岛或嵌套孔');
+        }
+      }
+    }
+    const uniqueFailures = [...new Set(failures)];
+    const errorCode = failureCodes[0] || null;
+    if (strict && uniqueFailures.length) throw dxfValidationError(errorCode || 'DXF_INVALID_TOPOLOGY', `DXF 轮廓无法无损建立二维实体：${uniqueFailures.join('；')}`);
+    const netArea = outer
+      ? Math.max(0, Math.abs(polygonArea(outer)) - holes.reduce((sum, ring) => sum + Math.abs(polygonArea(ring)), 0))
+      : 0;
+    drawing._solid = {
+      outer, holes, rings: outer ? [outer, ...holes] : [],
+      netArea, maxEndpointAdjustment: topology.maxEndpointAdjustment,
+      topology, failures: uniqueFailures, errorCode,
+    };
+    return drawing._solid;
+  }
   function circularIndex(index, lengthValue) { return (index % lengthValue + lengthValue) % lengthValue; }
   function weaponCadCollisionGeometry() {
     const drawing = state.drawings.weapon;
     const cacheKey = `${drawing.paths.length}:${drawing.pivot.x.toFixed(7)}:${drawing.pivot.y.toFixed(7)}`;
     if (drawing._cadCollisionGeometry?.cacheKey === cacheKey) return drawing._cadCollisionGeometry;
-    const loops = buildCollisionLoops(drawing.paths);
-    const outline = loops.reduce((largest, loop) => !largest || Math.abs(polygonArea(loop)) > Math.abs(polygonArea(largest)) ? loop : largest, null);
+    const outline = drawingSolid(drawing).outer;
     // If a drawing has no closed external outline, stay conservative: use its
     // furthest real entity point as one contact feature instead of inventing a
     // circular tooth or treating holes/construction lines as a solid boundary.
@@ -1077,7 +1200,7 @@
   function getShovelBoundsAt(sceneOrigin, angle = 0) {
     const samples = state.params.paramForkEnabled
       ? parameterForkGeometry().points.map((source) => add(initialForkPivotAt(sceneOrigin), rotate(source, angle)))
-      : state.drawings.shovel.paths.flatMap(samplePathForCollision).map((source) => shovelWorldAt(sceneOrigin, source, angle));
+      : drawingSolid(state.drawings.shovel).outer.map((source) => shovelWorldAt(sceneOrigin, source, angle));
     return samples.reduce((b, p) => ({ minX: Math.min(b.minX, p.x), maxX: Math.max(b.maxX, p.x), minY: Math.min(b.minY, p.y), maxY: Math.max(b.maxY, p.y) }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
   }
   function getShovelBoundsWorld() {
@@ -1089,7 +1212,7 @@
     // polyline or arc must not turn into a single fictitious fork point.
     const samples = state.params.paramForkEnabled
       ? parameterForkGeometry().points.map((source) => add(initialForkPivotAt(sceneOrigin), source))
-      : state.drawings.shovel.paths.flatMap(samplePathForCollision).map((source) => shovelWorldAt(sceneOrigin, source, 0));
+      : drawingSolid(state.drawings.shovel).outer.map((source) => shovelWorldAt(sceneOrigin, source, 0));
     if (!samples.length) return { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, width: 0, height: 0, points: [] };
     const bounds = samples.reduce((b, p) => ({ minX: Math.min(b.minX, p.x), maxX: Math.max(b.maxX, p.x), minY: Math.min(b.minY, p.y), maxY: Math.max(b.maxY, p.y) }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
     bounds.width = bounds.maxX - bounds.minX; bounds.height = bounds.maxY - bounds.minY;
@@ -1123,6 +1246,12 @@
     };
   }
   function getShovelFrontWorld() { return getShovelBoundsWorld().maxX; }
+  function getInitialShovelFrontWorld(sceneOrigin = weaponBaseSceneOrigin()) {
+    const local = activeForkSolidLoop(); const pivot = initialForkPivotAt(sceneOrigin);
+    const pose = initialForkGroundPose(local, pivot);
+    if (!pose.valid) return -Infinity;
+    return Math.max(...local.map((candidate) => pivot.x + rotate(candidate, pose.angle).x));
+  }
   function getMaterial() { return MATERIALS[state.params.targetMaterial] || MATERIALS.custom; }
   function getWeaponMaterial() { return WEAPON_MATERIALS[state.params.weaponMaterial] || WEAPON_MATERIALS.custom; }
   function getShovelMaterial() { return WEAPON_MATERIALS[state.params.shovelMaterial] || WEAPON_MATERIALS.custom; }
@@ -1318,32 +1447,64 @@
   }
 
   function largestCollisionLoopFor(drawing) {
-    const loops = buildCollisionLoops(drawing.paths);
-    return loops.reduce((largest, loop) => !largest || Math.abs(polygonArea(loop)) > Math.abs(polygonArea(largest)) ? loop : largest, null);
+    return drawingSolid(drawing).outer;
   }
 
   function forkBodyLocal(source) {
     return forkLocal(source);
   }
 
-  function forkMassProperties(localPoints = activeForkBodyPoints()) {
-    const mass = positive(state.params.forkMass, .03);
-    const cleaned = removeDuplicateLoopPoints(localPoints || []).points;
-    if (cleaned.length >= 3 && Math.abs(polygonArea(cleaned)) > 1e-12) {
-      let twiceArea = 0; let centroidXNumerator = 0; let centroidYNumerator = 0; let polarNumerator = 0;
-      for (let index = 0; index < cleaned.length; index += 1) {
-        const a = cleaned[index]; const b = cleaned[(index + 1) % cleaned.length]; const signedCross = cross(a, b);
-        twiceArea += signedCross;
-        centroidXNumerator += (a.x + b.x) * signedCross;
-        centroidYNumerator += (a.y + b.y) * signedCross;
-        polarNumerator += signedCross * (dot(a, a) + dot(a, b) + dot(b, b));
-      }
-      const signedArea = twiceArea / 2; const area = Math.abs(signedArea);
-      if (area > 1e-12) {
-        const centroid = point(centroidXNumerator / (6 * signedArea), centroidYNumerator / (6 * signedArea));
-        const polarAtOriginPerArea = Math.abs(polarNumerator / 12) / area;
-        const radiusOfGyrationSquared = Math.max(1e-10, polarAtOriginPerArea - dot(centroid, centroid));
-        return { mass, com: centroid, inertia: mass * radiusOfGyrationSquared, area, source: 'cad-uniform-lamina' };
+  function ringAreaMoments(rawRing) {
+    const ring = removeDuplicateLoopPoints(rawRing || []).points;
+    let twiceArea = 0; let firstXTimesSix = 0; let firstYTimesSix = 0; let polarTimesTwelve = 0;
+    for (let index = 0; index < ring.length; index += 1) {
+      const a = ring[index]; const b = ring[(index + 1) % ring.length]; const signedCross = cross(a, b);
+      twiceArea += signedCross;
+      firstXTimesSix += (a.x + b.x) * signedCross;
+      firstYTimesSix += (a.y + b.y) * signedCross;
+      polarTimesTwelve += signedCross * (dot(a, a) + dot(a, b) + dot(b, b));
+    }
+    const signedArea = twiceArea / 2; const orientation = Math.sign(signedArea) || 1;
+    return {
+      ring,
+      area: Math.abs(signedArea),
+      firstX: firstXTimesSix / 6 * orientation,
+      firstY: firstYTimesSix / 6 * orientation,
+      polarAtOrigin: polarTimesTwelve / 12 * orientation,
+    };
+  }
+
+  function solidAreaMoments(rawRings) {
+    const moments = (rawRings || []).map(ringAreaMoments);
+    if (!moments.length) return null;
+    const outer = moments[0]; const holes = moments.slice(1);
+    const area = outer.area - holes.reduce((sum, value) => sum + value.area, 0);
+    if (!(area > 1e-12)) return null;
+    const firstX = outer.firstX - holes.reduce((sum, value) => sum + value.firstX, 0);
+    const firstY = outer.firstY - holes.reduce((sum, value) => sum + value.firstY, 0);
+    const polarAtOrigin = outer.polarAtOrigin - holes.reduce((sum, value) => sum + value.polarAtOrigin, 0);
+    const centroid = point(firstX / area, firstY / area);
+    const radiusOfGyrationSquared = Math.max(1e-10, polarAtOrigin / area - dot(centroid, centroid));
+    return { area, centroid, radiusOfGyrationSquared, rings: moments.map((value) => value.ring) };
+  }
+
+  function forkMassProperties(solid = activeForkSolidGeometry()) {
+    const mass = Number(state.params.forkMass);
+    if (!Number.isFinite(mass) || mass <= 0) {
+      throw new Error('叉子质量必须是大于 0 kg 的有限实测/等效值；当前预设需要先补充该输入');
+    }
+    const rings = Array.isArray(solid) ? [solid] : (solid?.rings || []);
+    const cleaned = removeDuplicateLoopPoints(rings[0] || []).points;
+    if (cleaned.length >= 3) {
+      const moments = solidAreaMoments(rings);
+      if (moments) {
+        return {
+          mass,
+          com: moments.centroid,
+          inertia: mass * moments.radiusOfGyrationSquared,
+          area: moments.area,
+          source: rings.length > 1 ? 'cad-uniform-lamina-with-holes' : 'cad-uniform-lamina',
+        };
       }
     }
     if (cleaned.length >= 2) {
@@ -1353,27 +1514,44 @@
     throw new Error('叉子有效几何不足，无法推导质心与惯量');
   }
 
-  function createCadWeaponSolidColliders(world, body, loop, settings) {
-    const RAPIER = state.rapier;
+  function prepareCadSolidTriangulation(solid, label) {
     const triangulator = globalThis.earcut?.default || globalThis.earcut;
-    if (typeof triangulator !== 'function') throw new Error('武器 CAD 实体求解所需的 Earcut 模块未加载');
-    const cleaned = removeDuplicateLoopPoints(loop); const { points, sourceIndexes } = cleaned;
-    if (points.length < 3) throw new Error('武器 DXF 没有可闭合的外轮廓');
+    if (typeof triangulator !== 'function') throw new Error(`${label} CAD 实体求解所需的 Earcut 模块未加载`);
+    const rawRings = solid?.rings || (Array.isArray(solid?.[0]) ? solid : [solid]);
+    const cleanedRings = (rawRings || []).map(removeDuplicateLoopPoints);
+    const rings = cleanedRings.map((entry) => entry.points);
+    if (!rings[0] || rings[0].length < 3) throw new Error(`${label} DXF 没有可闭合的外轮廓`);
+    if (rings.some((ring) => ring.length < 3)) throw new Error(`${label} DXF 含少于 3 点的孔轮廓`);
 
-    // A closed imported weapon is a finite solid, not a one-sided polyline.
-    // With the old polyline, an energetic target could cross to the unsolved
-    // side of the edge; the independent exact-loop audit then saw overlap but
-    // repeated subdivision could never produce a restoring manifold.  Earcut
-    // supplies non-overlapping convex pieces on the same rigid body while the
-    // original outer loop remains the authoritative 0.08 mm geometric gate and
-    // source-index ruler.  No position projection or enlarged contact skin is
-    // introduced here.
-    const flat = points.flatMap((candidate) => [candidate.x, candidate.y]);
-    const indices = triangulator(flat, null, 2);
-    const boundaryEdgeKeys = points.map((_, index) => {
-      const next = (index + 1) % points.length;
-      return index < next ? `${index}:${next}` : `${next}:${index}`;
+    const points = []; const holeIndexes = []; const ringVertexStarts = [];
+    rings.forEach((ring, ringIndex) => {
+      ringVertexStarts.push(points.length);
+      if (ringIndex > 0) holeIndexes.push(points.length);
+      points.push(...ring);
     });
+    const flat = points.flatMap((candidate) => [candidate.x, candidate.y]);
+    const indices = triangulator(flat, holeIndexes, 2);
+    const boundaryEdgeKeys = [];
+    rings.forEach((ring, ringIndex) => {
+      const start = ringVertexStarts[ringIndex];
+      ring.forEach((_, index) => {
+        const left = start + index; const right = start + (index + 1) % ring.length;
+        boundaryEdgeKeys.push(left < right ? `${left}:${right}` : `${right}:${left}`);
+      });
+    });
+    const netArea = Math.abs(polygonArea(rings[0]))
+      - rings.slice(1).reduce((sum, ring) => sum + Math.abs(polygonArea(ring)), 0);
+    if (!(netArea > 1e-12)) throw new Error(`${label} DXF 的外环扣除孔后没有正实体面积`);
+    return {
+      triangulator, rings, points, indices, boundaryEdgeKeys, ringVertexStarts, netArea,
+      boundarySourceIndexes: cleanedRings.map((entry) => entry.sourceIndexes),
+    };
+  }
+
+  function createCadSolidColliders(world, body, solid, settings, role) {
+    const label = role === 'weapon' ? '武器' : '叉子'; const RAPIER = state.rapier;
+    const prepared = prepareCadSolidTriangulation(solid, label);
+    const { rings, points, indices, boundaryEdgeKeys, boundarySourceIndexes, netArea } = prepared;
     const colliders = []; const metadata = []; let triangulatedArea = 0;
     for (let offset = 0; offset + 2 < indices.length; offset += 3) {
       const triangleVertexIndexes = [indices[offset], indices[offset + 1], indices[offset + 2]];
@@ -1383,77 +1561,38 @@
       const desc = RAPIER.ColliderDesc.triangle(triangleLoop[0], triangleLoop[1], triangleLoop[2]);
       configureRigCollider(desc, settings);
       const collider = world.createCollider(desc, body);
-      if (!collider) throw new Error('武器 CAD 三角实体碰撞体创建失败');
-      triangulatedArea += area;
-      colliders.push(collider);
+      if (!collider) throw new Error(`${label} CAD 三角实体碰撞体创建失败`);
+      triangulatedArea += area; colliders.push(collider);
       metadata.push({
-        kind: 'cad-weapon-solid-triangle',
+        kind: `cad-${role}-solid-triangle`,
         triangleOrder: metadata.length,
         triangleVertexIndexes,
         triangleLoop,
         boundaryEdgeKeys,
-        loop: points,
-        sourceIndexes,
+        boundaryRings: rings,
+        boundarySourceIndexes,
+        loop: rings[0],
+        sourceIndexes: boundarySourceIndexes[0],
       });
     }
-    const outlineArea = Math.abs(polygonArea(points));
-    const areaTolerance = Math.max(1e-12, outlineArea * 1e-8);
-    if (!colliders.length || outlineArea <= 1e-12
-      || Math.abs(triangulatedArea - outlineArea) > areaTolerance) {
-      throw new Error(`武器 CAD 实体三角化未覆盖原外轮廓：轮廓 ${format(outlineArea * 1e6, 6)} mm²，三角形 ${format(triangulatedArea * 1e6, 6)} mm²`);
+    const areaTolerance = Math.max(1e-12, netArea * 1e-8);
+    if (!colliders.length || Math.abs(triangulatedArea - netArea) > areaTolerance) {
+      throw new Error(`${label} CAD 实体三角化与外环减孔面积不一致：实体 ${format(netArea * 1e6, 6)} mm²，三角形 ${format(triangulatedArea * 1e6, 6)} mm²`);
     }
     return {
-      collider: colliders[0], colliders, metadata, points, sourceIndexes,
-      mode: `闭合 CAD 三角复合实体（${colliders.length}）`,
+      collider: colliders[0], colliders, metadata,
+      points: rings[0], rings, sourceIndexes: boundarySourceIndexes[0],
+      mode: `闭合 CAD 三角复合实体（${colliders.length}；${rings.length - 1} 孔）`,
+      netArea,
     };
   }
 
-  function createCadForkSolidColliders(world, body, loop, settings) {
-    const RAPIER = state.rapier;
-    const triangulator = globalThis.earcut?.default || globalThis.earcut;
-    if (typeof triangulator !== 'function') throw new Error('叉子 CAD 实体求解所需的 Earcut 模块未加载');
-    const cleaned = removeDuplicateLoopPoints(loop); const { points, sourceIndexes } = cleaned;
-    if (points.length < 3) throw new Error('叉子 DXF 没有可闭合的外轮廓');
+  function createCadWeaponSolidColliders(world, body, solid, settings) {
+    return createCadSolidColliders(world, body, solid, settings, 'weapon');
+  }
 
-    // A concave fork must be solved as the same finite solid audited by the
-    // exact 0.08 mm outer-loop gate. A polyline is only a one-sided boundary:
-    // in a floor/fork/target wedge it can leave the target on the unsolved side
-    // while the closed-loop audit correctly sees growing overlap. Earcut makes
-    // a compound of non-overlapping convex triangles on this one rigid body;
-    // it changes neither the entered mass properties nor the revolute joint.
-    const flat = points.flatMap((candidate) => [candidate.x, candidate.y]);
-    const indices = triangulator(flat, null, 2);
-    const colliders = []; const metadata = []; let triangulatedArea = 0;
-    for (let offset = 0; offset + 2 < indices.length; offset += 3) {
-      const triangleVertexIndexes = [indices[offset], indices[offset + 1], indices[offset + 2]];
-      const triangleLoop = triangleVertexIndexes.map((index) => points[index]);
-      const area = Math.abs(polygonArea(triangleLoop));
-      if (area <= 1e-14) continue;
-      const desc = RAPIER.ColliderDesc.triangle(triangleLoop[0], triangleLoop[1], triangleLoop[2]);
-      configureRigCollider(desc, settings);
-      const collider = world.createCollider(desc, body);
-      if (!collider) throw new Error('叉子 CAD 三角实体碰撞体创建失败');
-      triangulatedArea += area;
-      colliders.push(collider);
-      metadata.push({
-        kind: 'cad-fork-solid-triangle',
-        triangleOrder: metadata.length,
-        triangleVertexIndexes,
-        triangleLoop,
-        loop: points,
-        sourceIndexes,
-      });
-    }
-    const outlineArea = Math.abs(polygonArea(points));
-    const areaTolerance = Math.max(1e-12, outlineArea * 1e-8);
-    if (!colliders.length || outlineArea <= 1e-12
-      || Math.abs(triangulatedArea - outlineArea) > areaTolerance) {
-      throw new Error(`叉子 CAD 实体三角化未覆盖原外轮廓：轮廓 ${format(outlineArea * 1e6, 6)} mm²，三角形 ${format(triangulatedArea * 1e6, 6)} mm²`);
-    }
-    return {
-      collider: colliders[0], colliders, metadata, points, sourceIndexes,
-      mode: `闭合 CAD 三角复合实体（${colliders.length}）`,
-    };
+  function createCadForkSolidColliders(world, body, solid, settings) {
+    return createCadSolidColliders(world, body, solid, settings, 'fork');
   }
 
   function createParameterWeaponColliders(world, body, settings) {
@@ -1493,14 +1632,18 @@
   }
 
   function initialLoopTargetOverlapArea(localLoop, bodyPosition, bodyAngle, target) {
+    return initialSolidTargetOverlapArea([localLoop], bodyPosition, bodyAngle, target);
+  }
+
+  function initialSolidTargetOverlapArea(localRings, bodyPosition, bodyAngle, target) {
     const clipping = globalThis.polygonClipping;
     if (!clipping?.intersection) throw new Error('初始实体相交检查所需的精确多边形模块未加载');
-    const targetLocalLoop = localLoop.map((local) => rotate(
+    const targetLocalRings = (localRings || []).map((ring) => ring.map((local) => rotate(
       subtract(add(bodyPosition, rotate(local, bodyAngle)), target.pos),
       -target.angle,
-    ));
+    )));
     const intersection = clipping.intersection(
-      clippingPolygonFromLoop(targetLocalLoop),
+      clippingPolygonFromRings(targetLocalRings),
       initialTargetMaterialGeometry(),
     );
     return materialGeometryArea(intersection);
@@ -1546,10 +1689,47 @@
     return colliders;
   }
 
+  function finitePositiveMassOrNull(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  function rigMassInputStatus(params = state.params) {
+    const weaponMass = finitePositiveMassOrNull(params.weaponMass);
+    const forkMass = finitePositiveMassOrNull(params.forkMass);
+    const missing = [];
+    if (weaponMass === null) missing.push('武器旋转组件质量');
+    if (forkMass === null) missing.push('叉子质量');
+    return {
+      valid: missing.length === 0,
+      missing,
+      weaponMass,
+      forkMass,
+      message: missing.length ? `当前量级缺少${missing.join('与')}；请填写大于 0 kg 的实测/等效值后再求解` : null,
+    };
+  }
+
+  function invalidateMassForDrawingRole(role) {
+    if (role === 'weapon') state.params.weaponMass = null;
+    else if (role === 'shovel') state.params.forkMass = null;
+  }
+
+  function usesExpectedBuiltinDrawing(role) {
+    const drawing = state.drawings[role];
+    const asset = window.BiteDefaultModels?.[role === 'shovel' ? 'fork' : 'weapon'];
+    return Boolean(drawing?.sourceKind === 'builtin' && asset?.sourceName && drawing.name === asset.sourceName);
+  }
+
   function weaponMassConsistencyError(metrics, forkMass, totalRobotMass) {
     const weaponMass = Number(metrics?.weaponMass);
     if (!Number.isFinite(weaponMass) || weaponMass <= 0) {
       return '武器旋转组件质量必须是大于 0 kg 的有限实测/等效值；求解器不会用 I/R² 自动补质量';
+    }
+    if (!Number.isFinite(forkMass) || forkMass <= 0) {
+      return '叉子质量必须是大于 0 kg 的有限实测/等效值；求解器不会沿用上一量级的质量';
+    }
+    if (!Number.isFinite(totalRobotMass) || totalRobotMass <= 0) {
+      return '整机质量必须是大于 0 kg 的有限值';
     }
     const rotorMassLowerBound = metrics.inertia / Math.max(metrics.radius ** 2, 1e-12);
     const massTolerance = Math.max(1e-12, rotorMassLowerBound * 1e-9);
@@ -1566,10 +1746,14 @@
   function createRapierRig(target, initialAngle, initialOmega) {
     const RAPIER = state.rapier;
     if (!USE_RAPIER_RIG || !RAPIER) return null;
+    state.rapierError = null;
+    let world = null;
     try {
       const geometryStatus = parameterGeometryStatus();
       if (!geometryStatus.valid) throw new Error(geometryStatus.reason);
-      const world = new RAPIER.World({ x: 0, y: -GRAVITY });
+      const massStatus = rigMassInputStatus();
+      if (!massStatus.valid) throw new Error(massStatus.message);
+      world = new RAPIER.World({ x: 0, y: -GRAVITY });
       world.lengthUnit = RAPIER_LENGTH_UNIT;
       world.integrationParameters.normalizedAllowedLinearError = RAPIER_ALLOWED_LINEAR_ERROR;
       world.integrationParameters.normalizedPredictionDistance = RAPIER_PREDICTION_DISTANCE;
@@ -1671,11 +1855,13 @@
 
       const baseOrigin = weaponBaseSceneOrigin();
       const initialDrive = configuredInitialDriveSpeed();
-      const totalRobotMass = positive(state.params.robotMass, .01);
-      const forkLocalPoints = activeForkSolidLoop();
+      const totalRobotMass = finitePositiveMassOrNull(state.params.robotMass);
+      if (totalRobotMass === null) throw new Error('整机质量必须是大于 0 kg 的有限值');
+      const forkSolidGeometry = activeForkSolidGeometry();
+      const forkLocalPoints = forkSolidGeometry.outer;
       const minimumForkPointCount = state.params.paramForkEnabled ? 2 : 3;
       if (forkLocalPoints.length < minimumForkPointCount) throw new Error(state.params.paramForkEnabled ? '参数叉必须有一根有限线段才能进入刚体求解' : '叉子必须有闭合外轮廓才能进入刚体求解');
-      const forkProperties = forkMassProperties(forkLocalPoints);
+      const forkProperties = forkMassProperties(forkSolidGeometry);
       // A rotor with all of its mass inside radius R must satisfy I <= m R^2.
       // I/R² remains only a consistency lower bound.  It must never be used to
       // manufacture a translational mass because joint reaction and target
@@ -1734,11 +1920,14 @@
       } else {
         const weaponGeometry = weaponCadCollisionGeometry();
         if (!weaponGeometry.hasClosedOutline || weaponGeometry.sourceOutline.length < 3) throw new Error('武器 DXF 必须有闭合外轮廓才能进入刚体求解');
-        const weaponSolid = createCadWeaponSolidColliders(world, weaponBody, weaponGeometry.sourceOutline.map(weaponLocal), weaponSettings);
+        const sourceSolid = drawingSolid(state.drawings.weapon);
+        const localSolid = { rings: sourceSolid.rings.map((ring) => ring.map(weaponLocal)) };
+        const weaponSolid = createCadWeaponSolidColliders(world, weaponBody, localSolid, weaponSettings);
         weaponAssembly = {
           colliders: weaponSolid.colliders,
           metadata: weaponSolid.metadata,
-          loops: [weaponSolid.points], mode: weaponSolid.mode, materialRemovalDefined: true,
+          loops: [weaponSolid.points], solidRings: weaponSolid.rings,
+          mode: weaponSolid.mode, materialRemovalDefined: true,
         };
       }
       const weaponToothLoops = state.params.paramWeaponEnabled ? [] : cadToothCuttingLoops();
@@ -1750,23 +1939,24 @@
       if (state.params.paramForkEnabled) {
         forkAssembly = createParameterForkCollider(world, forkBody, forkSettings);
       } else {
-        const forkSolid = createCadForkSolidColliders(world, forkBody, forkLocalPoints, forkSettings);
+        const forkSolid = createCadForkSolidColliders(world, forkBody, forkSolidGeometry, forkSettings);
         forkAssembly = {
           colliders: forkSolid.colliders, metadata: forkSolid.metadata,
-          points: forkSolid.points, mode: forkSolid.mode,
+          points: forkSolid.points, solidRings: forkSolid.rings, mode: forkSolid.mode,
         };
       }
 
       if (effectiveToolWidthZ('weapon') > 1e-9) {
-        for (const loop of weaponAssembly.loops) {
-          const overlap = initialLoopTargetOverlapArea(loop, baseOrigin, initialAngle, target);
+        const solidGroups = weaponAssembly.solidRings ? [weaponAssembly.solidRings] : weaponAssembly.loops.map((loop) => [loop]);
+        for (const rings of solidGroups) {
+          const overlap = initialSolidTargetOverlapArea(rings, baseOrigin, initialAngle, target);
           if (overlap > 1e-12) throw new Error(`武器与靶子初始实体重叠 ${format(overlap * 1e6, 6)} mm²；请调整场地坐标或武器初始角度，求解器不会从埋入状态启动`);
         }
       }
       if (effectiveToolWidthZ('fork') > 1e-9) {
         const invalidForkStart = state.params.paramForkEnabled
           ? initialSegmentCrossesTargetInterior(forkAssembly.points[0], forkAssembly.points[1], forkPivot, initialForkPose.angle, target)
-          : initialLoopTargetOverlapArea(forkAssembly.points, forkPivot, initialForkPose.angle, target) > 1e-12;
+          : initialSolidTargetOverlapArea(forkAssembly.solidRings, forkPivot, initialForkPose.angle, target) > 1e-12;
         if (invalidForkStart) throw new Error('叉子与靶子初始实体重叠；请调整靶子场地 X，求解器不会用位置投影把实体推出');
       }
       const initialForkBottom = Math.min(...forkAssembly.points.map((local) => forkPivot.y + rotate(local, initialForkPose.angle).y));
@@ -1830,9 +2020,11 @@
         forkColliderMetadata: forkAssembly.metadata,
         weaponLoop: weaponAssembly.loops[0],
         weaponLoops: weaponAssembly.loops,
+        weaponSolidRings: weaponAssembly.solidRings || null,
         weaponToothLoops,
         weaponSourceIndexes: weaponAssembly.metadata[0]?.sourceIndexes || [],
         forkLoop: forkAssembly.points,
+        forkSolidRings: forkAssembly.solidRings || null,
         forkLocalBounds,
         forkRadius,
         weaponMode: weaponAssembly.mode,
@@ -1852,6 +2044,7 @@
         chassisMass,
       };
     } catch (error) {
+      try { world?.free?.(); } catch (_) { /* failed rig owns no reusable world */ }
       state.rapierError = error?.message || 'Rapier CAD 刚体创建失败';
       return null;
     }
@@ -2117,6 +2310,21 @@
     return bestIndex;
   }
 
+  function closestBoundarySegment(localPoint, rings) {
+    let best = { ringIndex: -1, segmentIndex: -1, distanceSq: Infinity, point: null };
+    (rings || []).forEach((loop, ringIndex) => {
+      const segmentIndex = closestLoopSegmentIndex(localPoint, loop);
+      if (segmentIndex < 0) return;
+      const start = loop[segmentIndex]; const end = loop[(segmentIndex + 1) % loop.length];
+      const edge = subtract(end, start); const squared = dot(edge, edge);
+      const fraction = squared > 1e-24 ? clamp(dot(subtract(localPoint, start), edge) / squared, 0, 1) : 0;
+      const nearest = add(start, scalePoint(edge, fraction)); const delta = subtract(localPoint, nearest);
+      const distanceSq = dot(delta, delta);
+      if (distanceSq < best.distanceSq) best = { ringIndex, segmentIndex, distanceSq, point: nearest };
+    });
+    return best;
+  }
+
   function toothOrderForBoundaryIndex(index) {
     const geometry = weaponCadCollisionGeometry(); const count = geometry.sourceOutline.length;
     if (index < 0 || !geometry.collisionIndexes.includes(index)) return null;
@@ -2145,11 +2353,15 @@
       };
     }
     const origin = physics.weaponBody.translation(); const local = rotate(subtract(worldPoint, point(origin.x, origin.y)), -physics.weaponBody.rotation());
-    const loop = metadata?.loop || physics.weaponLoop;
-    const colliderIndex = closestLoopSegmentIndex(local, loop);
-    const sourceIndexes = metadata?.sourceIndexes || physics.weaponSourceIndexes;
-    const sourceIndex = sourceIndexes?.[colliderIndex] ?? colliderIndex;
-    const toothOrder = toothOrderForBoundaryIndex(sourceIndex);
+    const boundaryRings = metadata?.boundaryRings || [metadata?.loop || physics.weaponLoop];
+    const boundary = closestBoundarySegment(local, boundaryRings);
+    const colliderIndex = boundary.segmentIndex;
+    const sourceIndexes = metadata?.boundarySourceIndexes?.[boundary.ringIndex]
+      || metadata?.sourceIndexes || physics.weaponSourceIndexes;
+    const sourceIndex = boundary.ringIndex <= 0
+      ? (sourceIndexes?.[colliderIndex] ?? colliderIndex)
+      : `hole:${boundary.ringIndex}:${sourceIndexes?.[colliderIndex] ?? colliderIndex}`;
+    const toothOrder = boundary.ringIndex <= 0 ? toothOrderForBoundaryIndex(sourceIndex) : null;
     let triangleOrder = null; let triangleColliderEdgeIndex = null;
     let triangleEdgeVertices = null; let internalTriangleEdge = false;
     if (metadata?.kind === 'cad-weapon-solid-triangle' && metadata.triangleLoop?.length === 3) {
@@ -2162,8 +2374,38 @@
       internalTriangleEdge = !metadata.boundaryEdgeKeys.includes(edgeKey);
     }
     return {
-      index: sourceIndex, colliderIndex, toothOrder, isTooth: toothOrder !== null, parametric: false,
+      index: sourceIndex, colliderIndex, boundaryRingIndex: boundary.ringIndex,
+      toothOrder, isTooth: toothOrder !== null, parametric: false,
       triangleOrder, triangleColliderEdgeIndex, triangleEdgeVertices, internalTriangleEdge,
+    };
+  }
+
+  function matchGeometricContactsToSolver(rawContactGeometry, rawDistances, solverPoints, tolerance = GEOMETRY_CLEARANCE_EPS) {
+    const candidates = [];
+    rawContactGeometry.forEach((raw, geometricContactIndex) => solverPoints.forEach((solver, solverContactIndex) => {
+      const distanceError = Math.abs(rawDistances[geometricContactIndex] - solver.distance);
+      const pointError = Math.hypot(raw.midpoint.x - solver.point.x, raw.midpoint.y - solver.point.y);
+      if (distanceError <= tolerance && pointError <= tolerance) {
+        candidates.push({ geometricContactIndex, solverContactIndex, score: distanceError + pointError });
+      }
+    }));
+    candidates.sort((left, right) => left.score - right.score
+      || left.geometricContactIndex - right.geometricContactIndex
+      || left.solverContactIndex - right.solverContactIndex);
+    const geometricToSolver = new Map(); const usedSolverContacts = new Set();
+    candidates.forEach((candidate) => {
+      if (geometricToSolver.has(candidate.geometricContactIndex) || usedSolverContacts.has(candidate.solverContactIndex)) return;
+      geometricToSolver.set(candidate.geometricContactIndex, candidate.solverContactIndex);
+      usedSolverContacts.add(candidate.solverContactIndex);
+    });
+    return {
+      geometricToSolver,
+      unmatchedGeometricContacts: rawContactGeometry
+        .map((_, index) => index)
+        .filter((index) => !geometricToSolver.has(index)),
+      unmatchedSolverContacts: solverPoints
+        .map((_, index) => index)
+        .filter((index) => !usedSolverContacts.has(index)),
     };
   }
 
@@ -2202,30 +2444,23 @@
           const current = manifold.solverContactPoint(solverIndex);
           return { point: point(current.x, current.y), distance: manifold.solverContactDist(solverIndex) };
         });
-        const contactMatchTolerance = GEOMETRY_CLEARANCE_EPS;
-        const matchCandidates = [];
-        rawContactGeometry.forEach((raw, rawIndex) => solverPoints.forEach((solver, solverIndex) => {
-          const distanceError = Math.abs(manifold.contactDist(rawIndex) - solver.distance);
-          const pointError = Math.hypot(raw.midpoint.x - solver.point.x, raw.midpoint.y - solver.point.y);
-          if (distanceError <= contactMatchTolerance && pointError <= contactMatchTolerance) {
-            matchCandidates.push({ rawIndex, solverIndex, score: distanceError + pointError });
-          }
-        }));
-        matchCandidates.sort((left, right) => left.score - right.score || left.rawIndex - right.rawIndex || left.solverIndex - right.solverIndex);
-        const rawToSolverContact = new Map(); const usedSolverContacts = new Set();
-        matchCandidates.forEach((candidate) => {
-          if (rawToSolverContact.has(candidate.rawIndex) || usedSolverContacts.has(candidate.solverIndex)) return;
-          rawToSolverContact.set(candidate.rawIndex, candidate.solverIndex); usedSolverContacts.add(candidate.solverIndex);
-        });
+        const rawDistances = Array.from({ length: contactCount }, (_, index) => manifold.contactDist(index));
+        const matching = matchGeometricContactsToSolver(rawContactGeometry, rawDistances, solverPoints);
+        if (matching.unmatchedSolverContacts.length) {
+          throw new Error(`Rapier 有 ${matching.unmatchedSolverContacts.length} 个承载 solver contact 无法映射到几何 contact；本固定步必须回滚，不能静默漏记冲量`);
+        }
         const count = contactCount;
         for (let index = 0; index < count; index += 1) {
-          const contactIndex = index;
-          const mappedSolverIndex = rawToSolverContact.get(contactIndex);
+          const geometricContactIndex = index;
+          const mappedSolverIndex = matching.geometricToSolver.get(geometricContactIndex);
           const hasSolverContact = Number.isInteger(mappedSolverIndex);
-          const distance = manifold.contactDist(contactIndex);
-          const signedTangent = contactCount && hasSolverContact ? manifold.contactTangentImpulse(contactIndex) : 0;
-          const impulse = contactCount && hasSolverContact ? Math.abs(manifold.contactImpulse(contactIndex)) : 0;
-          let contactPoint = rawContactGeometry[contactIndex]?.midpoint || point(state.sim.target.pos.x, state.sim.target.pos.y);
+          const distance = rawDistances[geometricContactIndex];
+          // Rapier writes solver impulses back into the geometric contacts.
+          // Therefore impulses use geometricContactIndex while world-space
+          // solver witnesses use mappedSolverIndex.
+          const signedTangent = contactCount && hasSolverContact ? manifold.contactTangentImpulse(geometricContactIndex) : 0;
+          const impulse = contactCount && hasSolverContact ? Math.abs(manifold.contactImpulse(geometricContactIndex)) : 0;
+          let contactPoint = rawContactGeometry[geometricContactIndex]?.midpoint || point(state.sim.target.pos.x, state.sim.target.pos.y);
           let solverPenetration = 0;
           if (hasSolverContact) {
             contactPoint = solverPoints[mappedSolverIndex].point;
@@ -2239,7 +2474,11 @@
             role, other, point: contactPoint, normal,
             impulse, tangentImpulse: Math.abs(signedTangent), tangentImpulseSigned: signedTangent,
             penetration: Number.isFinite(distance) ? Math.max(0, -distance) : 0,
-            geometricGap, solverPenetration, combinedSkin, manifoldPointIndex: index, hasSolverContact,
+            geometricGap, solverPenetration, combinedSkin,
+            manifoldPointIndex: geometricContactIndex,
+            geometricContactIndex,
+            solverContactIndex: hasSolverContact ? mappedSolverIndex : null,
+            hasSolverContact,
             // Earcut diagonals are bookkeeping seams, not physical CAD faces.
             // Keep them in the coupled Rapier solve and exact penetration audit,
             // but never promote their zero/overlap manifolds to a tooth/body
@@ -2311,13 +2550,17 @@
     // right-side energy ledger can be checked against CAD mass properties.
     const inertiaInput = positive(p.weaponInertia, DEFAULTS.weaponInertia);
     const inertia = inertiaInput * 1e-6;
-    const weaponMass = Number(p.weaponMass);
+    const weaponMass = finitePositiveMassOrNull(p.weaponMass);
     const rotorMassLowerBound = inertia / Math.max(radius ** 2, 1e-12);
-    const maximumInertiaInput = weaponMass * radius ** 2 * 1e6;
-    const forkMassInput = positive(p.forkMass, DEFAULTS.forkMass);
-    const chassisMassBudget = positive(p.robotMass, .01) - weaponMass - forkMassInput;
-    const weaponMassConsistent = Number.isFinite(weaponMass)
-      && weaponMass > 0
+    const maximumInertiaInput = weaponMass === null ? null : weaponMass * radius ** 2 * 1e6;
+    const forkMassInput = finitePositiveMassOrNull(p.forkMass);
+    const robotMassInput = finitePositiveMassOrNull(p.robotMass);
+    const chassisMassBudget = weaponMass === null || forkMassInput === null || robotMassInput === null
+      ? null
+      : robotMassInput - weaponMass - forkMassInput;
+    const weaponMassConsistent = weaponMass !== null
+      && forkMassInput !== null
+      && robotMassInput !== null
       && weaponMass + Math.max(1e-12, rotorMassLowerBound * 1e-9) >= rotorMassLowerBound
       && chassisMassBudget > 0;
     const tipSpeed = angularVelocity * radius;
@@ -2490,66 +2733,75 @@
   }
 
   function exactCadLoopTargetPenetration(localLoop, movingBody, targetBody) {
-    if (!localLoop?.length || !movingBody || !targetBody) return 0;
+    return exactCadSolidTargetPenetration([localLoop], movingBody, targetBody);
+  }
+
+  function exactCadSolidTargetPenetration(localRings, movingBody, targetBody) {
+    if (!localRings?.[0]?.length || !movingBody || !targetBody) return 0;
     const movingPositionRaw = movingBody.translation(); const targetPositionRaw = targetBody.translation();
     const movingPosition = point(movingPositionRaw.x, movingPositionRaw.y);
     const targetPosition = point(targetPositionRaw.x, targetPositionRaw.y);
     const movingAngle = movingBody.rotation(); const targetAngle = targetBody.rotation();
-    const loop = localLoop.map((local) => rotate(
+    const rings = localRings.map((ring) => ring.map((local) => rotate(
       subtract(add(movingPosition, rotate(local, movingAngle)), targetPosition),
       -targetAngle,
-    ));
+    )));
     const halfX = targetLength() / 2; const halfY = targetThickness() / 2;
     let deepest = 0;
-    for (let index = 0; index < loop.length; index += 1) {
-      const a = loop[index]; const b = loop[(index + 1) % loop.length];
-      const dx = b.x - a.x; const dy = b.y - a.y;
-      let enter = 0; let leave = 1;
-      const clipAxis = (origin, delta, lower, upper) => {
-        if (Math.abs(delta) <= 1e-16) return origin >= lower && origin <= upper;
-        let first = (lower - origin) / delta; let last = (upper - origin) / delta;
-        if (first > last) [first, last] = [last, first];
-        enter = Math.max(enter, first); leave = Math.min(leave, last);
-        return enter <= leave;
-      };
-      if (!clipAxis(a.x, dx, -halfX, halfX) || !clipAxis(a.y, dy, -halfY, halfY)) continue;
-      enter = clamp(enter, 0, 1); leave = clamp(leave, 0, 1);
-      if (leave < enter) continue;
-      // On a clipped straight segment, distance to each rectangle face is
-      // affine. The maximum of their minimum occurs at an endpoint or where
-      // two of those affine functions cross, so this is exact for the sampled
-      // CAD polyline rather than a visual/raster estimate.
-      const distances = [
-        [halfX - a.x, -dx], [halfX + a.x, dx],
-        [halfY - a.y, -dy], [halfY + a.y, dy],
-      ];
-      const candidates = [enter, leave];
-      for (let left = 0; left < distances.length; left += 1) {
-        for (let right = left + 1; right < distances.length; right += 1) {
-          const denominator = distances[left][1] - distances[right][1];
-          if (Math.abs(denominator) <= 1e-16) continue;
-          const fraction = (distances[right][0] - distances[left][0]) / denominator;
-          if (fraction >= enter && fraction <= leave) candidates.push(fraction);
+    rings.forEach((loop) => {
+      for (let index = 0; index < loop.length; index += 1) {
+        const a = loop[index]; const b = loop[(index + 1) % loop.length];
+        const dx = b.x - a.x; const dy = b.y - a.y;
+        let enter = 0; let leave = 1;
+        const clipAxis = (origin, delta, lower, upper) => {
+          if (Math.abs(delta) <= 1e-16) return origin >= lower && origin <= upper;
+          let first = (lower - origin) / delta; let last = (upper - origin) / delta;
+          if (first > last) [first, last] = [last, first];
+          enter = Math.max(enter, first); leave = Math.min(leave, last);
+          return enter <= leave;
+        };
+        if (!clipAxis(a.x, dx, -halfX, halfX) || !clipAxis(a.y, dy, -halfY, halfY)) continue;
+        enter = clamp(enter, 0, 1); leave = clamp(leave, 0, 1);
+        if (leave < enter) continue;
+        // On a clipped straight segment, distance to each rectangle face is
+        // affine. The maximum of their minimum occurs at an endpoint or where
+        // two of those affine functions cross.
+        const distances = [
+          [halfX - a.x, -dx], [halfX + a.x, dx],
+          [halfY - a.y, -dy], [halfY + a.y, dy],
+        ];
+        const candidates = [enter, leave];
+        for (let left = 0; left < distances.length; left += 1) {
+          for (let right = left + 1; right < distances.length; right += 1) {
+            const denominator = distances[left][1] - distances[right][1];
+            if (Math.abs(denominator) <= 1e-16) continue;
+            const fraction = (distances[right][0] - distances[left][0]) / denominator;
+            if (fraction >= enter && fraction <= leave) candidates.push(fraction);
+          }
         }
+        candidates.forEach((fraction) => {
+          deepest = Math.max(deepest, Math.min(...distances.map(([constant, slope]) => constant + slope * fraction)));
+        });
       }
-      candidates.forEach((fraction) => {
-        deepest = Math.max(deepest, Math.min(...distances.map(([constant, slope]) => constant + slope * fraction)));
-      });
-    }
+    });
     // Also cover the inverse containment case where a target corner lies inside
-    // the CAD solid without any CAD edge entering the target rectangle.
+    // the outer ring but not inside a hole, without any CAD edge entering the
+    // target rectangle.
     [point(-halfX, -halfY), point(halfX, -halfY), point(halfX, halfY), point(-halfX, halfY)]
-      .filter((corner) => pointInsideSimpleLoop(corner, loop))
+      .filter((corner) => pointInsideSimpleLoop(corner, rings[0])
+        && !rings.slice(1).some((hole) => pointInsideSimpleLoop(corner, hole)))
       .forEach((corner) => {
-        const distance = loop.reduce((minimum, start, index) => Math.min(
-          minimum,
-          pointSegmentDistance(corner, start, loop[(index + 1) % loop.length]),
-        ), Infinity);
+        const distance = rings.reduce((ringMinimum, loop) => Math.min(ringMinimum, loop.reduce((minimum, start, index) => Math.min(
+          minimum, pointSegmentDistance(corner, start, loop[(index + 1) % loop.length]),
+        ), Infinity)), Infinity);
         if (Number.isFinite(distance)) deepest = Math.max(deepest, distance);
       });
     return Math.max(0, deepest);
   }
   function exactWeaponLoopsTargetPenetration(physics) {
+    if (physics?.weaponSolidRings?.length) {
+      return exactCadSolidTargetPenetration(physics.weaponSolidRings, physics.weaponBody, physics.targetBody);
+    }
     const loops = physics?.weaponLoops?.length ? physics.weaponLoops : [physics?.weaponLoop];
     return loops.reduce((deepest, loop) => Math.max(
       deepest,
@@ -2773,6 +3025,7 @@
     const initialAngle = ((number(state.params.weaponInitialAngle) % 360) + 360) % 360 * Math.PI / 180;
     const initialOmega = initialWeaponOmega();
     const rigPhysics = createRapierRig(target, initialAngle, initialOmega);
+    const massInputsReady = rigMassInputStatus().valid;
     const initialForkAngle = rigPhysics?.initialForkAngle ?? 0;
     // When Rapier is present, a failed unified CAD rig is an invalid scenario,
     // not permission to silently switch to a different collision model.
@@ -2843,7 +3096,7 @@
       materialMaxIntrusion: 0,
       lastRigFailure: null,
       creationError: rigCreationFailed ? (state.rapierError || 'Rapier CAD 刚体创建失败') : null,
-      solverDomainStopped: rigCreationFailed,
+      solverDomainStopped: rigCreationFailed && massInputsReady,
       completed: rigCreationFailed,
     };
   }
@@ -3684,11 +3937,17 @@
   }
 
   function clippingPolygonFromLoop(loop) {
-    if (!loop?.length) return [];
-    const ring = loop.map((p) => [p.x, p.y]);
-    const first = ring[0]; const last = ring[ring.length - 1];
-    if (!last || Math.hypot(first[0] - last[0], first[1] - last[1]) > 1e-12) ring.push([...first]);
-    return [[ring]];
+    return clippingPolygonFromRings([loop]);
+  }
+
+  function clippingPolygonFromRings(loops) {
+    const rings = (loops || []).filter((loop) => loop?.length).map((loop) => {
+      const ring = loop.map((p) => [p.x, p.y]);
+      const first = ring[0]; const last = ring[ring.length - 1];
+      if (!last || Math.hypot(first[0] - last[0], first[1] - last[1]) > 1e-12) ring.push([...first]);
+      return ring;
+    });
+    return rings.length ? [rings] : [];
   }
 
   function predictedWeaponLoopInTarget(before, physics, intervalDt, fraction, localLoop = physics.weaponLoop) {
@@ -5326,23 +5585,15 @@
       const metadata = role === 'weapon-target'
         ? physics.weaponColliderMeta?.get(collider.handle)
         : physics.forkColliderMeta?.get(collider.handle);
-      const loop = metadata?.loop || (role === 'weapon-target' ? physics.weaponLoop : physics.forkLoop) || [];
-      if (loop.length < 2) return { point: sample, distance: Infinity };
+      const fallbackLoop = metadata?.loop || (role === 'weapon-target' ? physics.weaponLoop : physics.forkLoop) || [];
+      const boundaryRings = metadata?.boundaryRings || [fallbackLoop];
+      if (!boundaryRings.some((loop) => loop.length >= 2)) return { point: sample, distance: Infinity };
       const originRaw = body.translation(); const origin = point(originRaw.x, originRaw.y);
       const localSample = rotate(subtract(sample, origin), -body.rotation());
-      let closest = null; let minimumSq = Infinity;
-      const edgeCount = loop.length === 2 ? 1 : loop.length;
-      for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex += 1) {
-        const start = loop[edgeIndex]; const end = loop[(edgeIndex + 1) % loop.length];
-        const edge = subtract(end, start); const edgeSq = dot(edge, edge);
-        const fraction = edgeSq > 1e-24 ? clamp(dot(subtract(localSample, start), edge) / edgeSq, 0, 1) : 0;
-        const projected = add(start, scalePoint(edge, fraction)); const delta = subtract(projected, localSample);
-        const distanceSq = dot(delta, delta);
-        if (distanceSq < minimumSq) { minimumSq = distanceSq; closest = projected; }
-      }
+      const boundary = closestBoundarySegment(localSample, boundaryRings);
       return {
-        point: add(origin, rotate(closest || localSample, body.rotation())),
-        distance: Math.sqrt(minimumSq),
+        point: add(origin, rotate(boundary.point || localSample, body.rotation())),
+        distance: Math.sqrt(boundary.distanceSq),
       };
     };
     const deduplicate = (entries, role, maximum = 2) => {
@@ -5956,11 +6207,13 @@
             ? 0
             : !proximity.nearFork && !hasForkContact
             ? 0
-            : exactCadLoopTargetPenetration(physics.forkLoop, physics.forkBody, physics.targetBody),
+            : (physics.forkSolidRings?.length
+              ? exactCadSolidTargetPenetration(physics.forkSolidRings, physics.forkBody, physics.targetBody)
+              : exactCadLoopTargetPenetration(physics.forkLoop, physics.forkBody, physics.targetBody)),
           // A damaged material lane can contain holes and disconnected pieces;
           // its exact gate is handled by the material polygon/allowance path.
           // The rigid reference target remains a rectangle, so use the actual
-          // CAD outer loop instead of any Rapier convex-decomposition feature.
+          // CAD solid rings instead of any Rapier convex-decomposition feature.
           weapon: !proximity.nearWeapon && !hasWeaponContact
             ? 0
             : !physics.materialResponseEnabled
@@ -6411,12 +6664,16 @@
     state.sim = createSimulation();
     state.accumulator = 0;
     updateReadouts(); drawScene();
-    if (state.sim.creationError) {
+    const massStatus = rigMassInputStatus();
+    if (!massStatus.valid) {
+      addEvent(`等待质量输入：${massStatus.message}`, 'warning');
+      updateStatus('待补武器 / 叉子质量', 'warning');
+    } else if (state.sim.creationError) {
       addEvent(`刚体场景无效：${state.sim.creationError}`, 'warning');
       updateStatus('刚体场景参数无效', 'warning');
       showToast(state.sim.creationError, 'error');
     } else {
-      updateStatus('内置模型就绪', 'ready');
+      updateStatus('刚体场景就绪', 'ready');
       if (message) showToast(message);
     }
   }
@@ -6442,10 +6699,14 @@
     const consistency = `尺寸推算 ${format(geometryMass, 4)} kg；输入 ${format(enteredMass, 4)} kg；运动采用${massModeLabel} ${format(effectiveTargetMass(), 4)} kg。`;
     setText('materialConsistencyReadout', `${consistency}${massDifference > .2 ? ' 两者相差超过 20%，请核对 Z 宽、密度或确认输入质量包含支架/夹具。' : ' 质量与尺寸基本自洽。'}`);
     $('#materialConsistencyReadout')?.classList.toggle('warning', massDifference > .2);
+    const rigMassStatus = rigMassInputStatus();
     const massConstraint = m.weaponMassConsistent
       ? `通过 I ≤ mR²：当前质量/半径允许的最大惯量 ${format(m.maximumInertiaInput, 3)} kg·mm²；底盘剩余质量 ${format(m.chassisMassBudget, 4)} kg。`
-      : `未通过质量予算或 I ≤ mR²：当前惯量要求旋转组件至少 ${format(m.rotorMassLowerBound, 6)} kg，且扣除叉子后底盘质量必须大于 0 kg。`;
-    setText('weaponMassReadout', `当前旋转组件 ${format(m.weaponMass, 6)} kg；${massConstraint}初始示例 ${format(DEFAULT_WEAPON_MASS, 6)} kg = 内置 DXF 净闭合面积 ${format(DEFAULT_WEAPON_NET_AREA_MM2, 3)} mm² × ${DEFAULT_WEAPON_WIDTH_MM} mm × ${DEFAULT_STEEL_DENSITY} kg/m³；该估算不包含轮毂、紧固件、带轮或轴，实机应称重后覆盖。`);
+      : (rigMassStatus.valid
+        ? `未通过质量预算或 I ≤ mR²：当前惯量要求旋转组件至少 ${format(m.rotorMassLowerBound, 6)} kg，且扣除叉子后底盘质量必须大于 0 kg。`
+        : `${rigMassStatus.message}。`);
+    const weaponMassLabel = m.weaponMass === null ? '未填写' : `${format(m.weaponMass, 6)} kg`;
+    setText('weaponMassReadout', `当前旋转组件 ${weaponMassLabel}；${massConstraint}初始示例 ${format(DEFAULT_WEAPON_MASS, 6)} kg = 内置 DXF 净闭合面积 ${format(DEFAULT_WEAPON_NET_AREA_MM2, 3)} mm² × ${DEFAULT_WEAPON_WIDTH_MM} mm × ${DEFAULT_STEEL_DENSITY} kg/m³；该估算不包含轮毂、紧固件、带轮或轴，实机应称重后覆盖。`);
     $('#weaponMassReadout')?.classList.toggle('warning', !m.weaponMassConsistent);
     const runtimeMode = runtimeContactMode();
     const modelLabel = runtimeMode === 'rigid-upper-bound'
@@ -6486,6 +6747,18 @@
     const weaponPreset = WEAPON_MOTOR_PRESETS[state.params.weaponMotorPreset]?.label || '自定义武器';
     const drivePreset = DRIVE_MOTOR_PRESETS[state.params.driveMotorPreset]?.label || '自定义行驶';
     setText('presetReadout', `${preset.label}：${weaponPreset}；${drivePreset}。靶子与全部电机数值均为可编辑工程条件。`);
+    const presetMassStatus = $('#presetMassStatus');
+    if (presetMassStatus) {
+      const requiresInput = preset.mass?.status === 'needs-input'
+        && state.appliedRobotPreset === state.params.robotPreset;
+      const showMassStatus = requiresInput || !rigMassStatus.valid;
+      presetMassStatus.classList.toggle('hidden', !showMassStatus);
+      presetMassStatus.textContent = showMassStatus
+        ? (!rigMassStatus.valid
+          ? `${rigMassStatus.message}。导入的新图纸不会沿用内置部件质量；求解器也不会用 I/R² 反推。`
+          : `质量已由用户补齐：武器 ${format(rigMassStatus.weaponMass, 6)} kg，叉子 ${format(rigMassStatus.forkMass, 6)} kg。请继续核对来源与整机质量预算。`)
+        : '';
+    }
     updateCollisionReadout(); updateTransport();
   }
 
@@ -6575,7 +6848,8 @@
       $('.shovel-tick').style.opacity = '.35'; $('.weapon-tick').style.opacity = '.35';
       return;
     }
-    button.disabled = false; if (step) step.disabled = false; if (seek) seek.disabled = false;
+    const unavailable = !rigMassInputStatus().valid || Boolean(sim.creationError);
+    button.disabled = unavailable; if (step) step.disabled = unavailable; if (seek) seek.disabled = unavailable;
     button.querySelector('.play-symbol').textContent = sim.running ? 'Ⅱ' : '▶'; button.querySelector('span:last-child').textContent = sim.running ? '暂停' : '播放';
     const endTime = simulationEndTime();
     const timelineTime = clamp(sim.time, 0, endTime);
@@ -6677,7 +6951,7 @@
       return;
     }
     const label = ROBOT_PRESETS[presetKey]?.label || presetKey;
-    warning.textContent = `几何未缩放：已套用“${label}”的质量、动力与推荐靶参数，但${retainedCad.join('和')}的当前 DXF 仍保留原始尺寸。请导入对应量级图纸，或显式启用并填写测试几何。`;
+    warning.textContent = `几何未缩放：已套用“${label}”的动力与推荐靶参数，但${retainedCad.join('和')}的当前 DXF 仍保留原始尺寸；武器/叉子质量需另行实测填写。请导入对应量级图纸，或显式启用并填写测试几何。`;
   }
 
   function syncParametricUi() {
@@ -6748,8 +7022,13 @@
     }
     const weaponMassField = $('[data-param="weaponMass"]');
     if (weaponMassField) {
-      weaponMassField.step = '0.001'; weaponMassField.min = '0.000001';
+      weaponMassField.step = 'any'; weaponMassField.min = '0.000001';
       weaponMassField.title = '实测完整旋转组件（刀体、轮毂、紧固件、带轮/轴中随武器刚体运动的部分）质量；输入不会由 I/R² 自动改写。';
+    }
+    const forkMassField = $('[data-param="forkMass"]');
+    if (forkMassField) {
+      forkMassField.step = 'any'; forkMassField.min = '0.000001';
+      forkMassField.title = '活动叉及随叉体绕铰点运动部分的实测/等效质量；输入不会从上一量级继承。';
     }
     const radiusInput = $('[data-param="tipRadius"]');
     if (radiusInput) {
@@ -6802,12 +7081,22 @@
     return false;
   }
   function alignGeometryToFloor() {
+    const previousSceneY = state.params.weaponSceneY;
     const radius = state.params.paramWeaponEnabled
       ? activeWeaponRadius()
       : Math.max(positive(number(state.params.tipRadius) / 1000, .001), getMaxWeaponRadius());
     state.params.weaponSceneY = Math.round((groundY() + radius * 1.05) * 1000 * 100) / 100;
     // Fork offset is an installation dimension. Never rewrite it to create a
-    // visual floor fit; the independent hinged body settles under gravity.
+    // visual floor fit; the independent hinged body settles under gravity. A
+    // smaller replacement weapon must not lower the shared chassis until the
+    // retained fork enters the floor, so keep the previous valid installation
+    // height when the radius-derived candidate breaks the complete assembly.
+    const candidateStatus = groundClearanceStatus();
+    if (candidateStatus.valid) return candidateStatus;
+    state.params.weaponSceneY = previousSceneY;
+    const previousStatus = groundClearanceStatus();
+    if (previousStatus.valid) return previousStatus;
+    throw new Error(clearanceMessage(previousStatus));
   }
   function setAdvancedEnabled(enabled) {
     state.advancedEnabled = Boolean(enabled);
@@ -6856,34 +7145,54 @@
   }
   function applyRobotPreset() {
     const preset = ROBOT_PRESETS[state.params.robotPreset]; if (!preset) return;
-    Object.entries(preset).forEach(([name, value]) => { if (name !== 'label' && name !== 'targetCenterY' && name !== 'restitution') state.params[name] = value; });
-    if (state.params.robotPreset !== '110kg') {
-      // The supplied 55 mm CAD belongs to the 1.36 kg robot. Only the 110 kg
-      // example deliberately switches to its explicit 250 mm parameter tool;
-      // returning to another class restores the retained CAD sources.
-      state.params.paramWeaponEnabled = false;
-      state.params.paramForkEnabled = false;
-      state.params.targetSceneX = DEFAULTS.targetSceneX;
+    const previousParams = { ...state.params };
+    const previousAppliedPreset = state.appliedRobotPreset;
+    try {
+      const metadata = new Set(['label', 'mass', 'targetCenterY']);
+      Object.entries(preset).forEach(([name, value]) => { if (!metadata.has(name)) state.params[name] = value; });
+      state.params.weaponMass = usesExpectedBuiltinDrawing('weapon')
+        ? (preset.mass?.weaponKg ?? null)
+        : null;
+      state.params.forkMass = usesExpectedBuiltinDrawing('shovel')
+        ? (preset.mass?.forkKg ?? null)
+        : null;
+      state.params.weaponInitialAngle = Number.isFinite(preset.weaponInitialAngle)
+        ? preset.weaponInitialAngle
+        : DEFAULTS.weaponInitialAngle;
+      if (state.params.robotPreset !== '110kg') {
+        // The supplied 55 mm CAD belongs to the 1.36 kg robot. Only the 110 kg
+        // example deliberately switches to its explicit 250 mm parameter tool;
+        // returning to another class restores the retained CAD sources.
+        state.params.paramWeaponEnabled = false;
+        state.params.paramForkEnabled = false;
+        state.params.targetSceneX = DEFAULTS.targetSceneX;
+      }
+      // Historical presets were stored as g·m². The public UI is now kg·mm²;
+      // retain physically equivalent small-class values while applying the
+      // requested 160 kg·mm² default for the 1.36 kg starter configuration.
+      const inertiaKgMm2 = { '150g': 5, '220g': 8, '454g': 40, '1.36kg': 160, '5lb': 2500, '13.6kg': 25000, '110kg': 550000 };
+      const targetWidthByClass = { '150g': 15, '220g': 20, '454g': 30, '1.36kg': 40, '5lb': 50, '13.6kg': 80, '110kg': 200 };
+      state.params.weaponInertia = inertiaKgMm2[state.params.robotPreset] ?? state.params.weaponInertia;
+      state.params.targetWidthZ = targetWidthByClass[state.params.robotPreset] ?? state.params.targetWidthZ;
+      applyTargetMaterialPreset(state.params.targetMaterial);
+      // A closed imported CAD outline remains the geometry source of truth.
+      synchroniseDerivedWeaponRadius();
+      // Keep the imported CAD envelope and fork on/above the fixed floor.
+      alignGeometryToFloor();
+      const toolFront = Math.max(
+        weaponBaseSceneOrigin().x + activeWeaponRadius(),
+        getInitialShovelFrontWorld(),
+      );
+      const minimumTargetCentre = toolFront + targetLength() / 2 + .01;
+      state.params.targetSceneX = Math.max(number(state.params.targetSceneX) / 1000, minimumTargetCentre) * 1000;
+      state.appliedRobotPreset = state.params.robotPreset;
+    } catch (error) {
+      state.params = previousParams;
+      state.appliedRobotPreset = previousAppliedPreset;
+      syncInputs(); renderDrawingStatus(); updateReadouts(); drawScene();
+      showToast(`量级未应用：${error.message}`, 'error');
+      return;
     }
-    // Historical presets were stored as g·m². The public UI is now kg·mm²;
-    // retain physically equivalent small-class values while applying the
-    // requested 160 kg·mm² default for the 1.36 kg starter configuration.
-    const inertiaKgMm2 = { '150g': 5, '220g': 8, '454g': 40, '1.36kg': 160, '5lb': 2500, '13.6kg': 25000, '110kg': 550000 };
-    const targetWidthByClass = { '150g': 15, '220g': 20, '454g': 30, '1.36kg': 40, '5lb': 50, '13.6kg': 80, '110kg': 200 };
-    state.params.weaponInertia = inertiaKgMm2[state.params.robotPreset] ?? state.params.weaponInertia;
-    state.params.targetWidthZ = targetWidthByClass[state.params.robotPreset] ?? state.params.targetWidthZ;
-    applyTargetMaterialPreset(state.params.targetMaterial);
-    // A closed imported CAD outline remains the geometry source of truth.
-    synchroniseDerivedWeaponRadius();
-    // Keep the imported CAD envelope and fork on/above the fixed floor.
-    alignGeometryToFloor();
-    const toolFront = Math.max(
-      weaponBaseSceneOrigin().x + activeWeaponRadius(),
-      getShovelFrontWorld(),
-    );
-    const minimumTargetCentre = toolFront + targetLength() / 2 + .01;
-    state.params.targetSceneX = Math.max(number(state.params.targetSceneX) / 1000, minimumTargetCentre) * 1000;
-    state.appliedRobotPreset = state.params.robotPreset;
     syncInputs(); resetAfterChange(`${preset.label} 量级与推荐靶子`);
   }
 
@@ -6942,7 +7251,13 @@
     if (key === 'weaponMotorPreset') { applyMotorPreset('weapon', input.value); syncInputs(); resetAfterChange('武器电机方案'); return; }
     if (key === 'driveMotorPreset') { applyMotorPreset('drive', input.value); syncInputs(); resetAfterChange('行驶电机方案'); return; }
     if (key === 'dxfUnit') {
-      reprocessImportedDrawings();
+      try {
+        reprocessImportedDrawings();
+      } catch (error) {
+        state.params[key] = previous; syncInputs(); updateReadouts(); drawScene();
+        flashInvalid(input, `DXF 单位切换未提交：${error.message}`);
+        return;
+      }
       if (!validateGroundClearance(input)) {
         state.params[key] = previous; reprocessImportedDrawings(); syncInputs(); updateReadouts(); drawScene();
         return;
@@ -6956,41 +7271,157 @@
   function setAxisPicking(enabled) { state.axisPicking = enabled; $('#canvasWrap').classList.toggle('axis-picking', enabled); $('#axisHint').classList.toggle('hidden', !enabled); const button = $('#setAxis'); button.classList.toggle('primary', enabled); button.classList.toggle('secondary', !enabled); button.textContent = enabled ? '取消设置转轴' : '在画布上设置转轴'; if (enabled) showToast('点击武器轮廓上的位置，将其设为新的武器局部原点 / 转轴；场景原点不会移动。'); }
 
   // ASCII DXF importer. DWG stays intentionally unsupported without an external adapter.
-  function pairsFromDxf(text) { const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/); const pairs = []; for (let i = 0; i + 1 < lines.length; i += 2) { const code = Number.parseInt(lines[i].trim(), 10); if (Number.isFinite(code)) pairs.push({ code, value: lines[i + 1].trim() }); } return pairs; }
+  function pairsFromDxf(text) {
+    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
+    while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+    if (lines.length % 2 !== 0) throw dxfValidationError('DXF_MALFORMED_PAIRS', 'ASCII DXF 的组码/值行没有成对结束');
+    const pairs = [];
+    for (let i = 0; i < lines.length; i += 2) {
+      const rawCode = lines[i].trim();
+      if (!/^[+-]?\d+$/.test(rawCode)) throw dxfValidationError('DXF_INVALID_GROUP_CODE', `ASCII DXF 第 ${i + 1} 行不是有效整数组码：${rawCode || '空白'}`);
+      pairs.push({ code: Number(rawCode), value: lines[i + 1].trim() });
+    }
+    return pairs;
+  }
   function detectedDxfUnit(text) { const pairs = pairsFromDxf(text); for (let i = 0; i < pairs.length; i += 1) if (pairs[i].value === '$INSUNITS') for (let j = i + 1; j < Math.min(i + 12, pairs.length); j += 1) if (pairs[j].code === 70) return INSUNITS[Number(pairs[j].value)] || null; return null; }
   function entityChunks(text) {
     const pairs = pairsFromDxf(text); const chunks = []; let section = null; let index = 0;
     while (index < pairs.length) { const pair = pairs[index]; if (pair.code === 0 && pair.value.toUpperCase() === 'SECTION') { section = pairs[index + 1]?.code === 2 ? pairs[index + 1].value.toUpperCase() : null; index += 2; continue; } if (pair.code === 0 && pair.value.toUpperCase() === 'ENDSEC') { section = null; index += 1; continue; } if (section === 'ENTITIES' && pair.code === 0) { const entityPairs = []; const type = pair.value.toUpperCase(); index += 1; while (index < pairs.length && pairs[index].code !== 0) entityPairs.push(pairs[index++]); chunks.push({ type, pairs: entityPairs }); continue; } index += 1; }
     return chunks;
   }
-  function firstNumber(pairs, code, fallback = NaN) { const found = pairs.find((pair) => pair.code === code); return found ? number(found.value, fallback) : fallback; }
+  function firstNumber(pairs, code, fallback = NaN) {
+    const found = pairs.find((pair) => pair.code === code);
+    return found ? Number(found.value) : fallback;
+  }
   function xyFromPairs(pairs) { const points = []; let current = null; pairs.forEach((pair) => { if (pair.code === 10) { if (current && Number.isFinite(current.x) && Number.isFinite(current.y)) points.push(current); current = { x: number(pair.value, NaN), y: NaN }; } else if (pair.code === 20 && current) { current.y = number(pair.value, NaN); if (Number.isFinite(current.x) && Number.isFinite(current.y)) { points.push(current); current = null; } } }); return points; }
   const REJECTED_DXF_GEOMETRY_TYPES = new Set([
     'SPLINE', 'ELLIPSE', 'INSERT', 'MINSERT', 'MLINE', 'HATCH', 'SOLID', '3DFACE', 'TRACE', 'REGION', 'BODY', 'ACAD_PROXY_ENTITY',
+    '3DSOLID', 'MESH', 'SURFACE', 'PLANESURFACE', 'REVOLVEDSURFACE', 'EXTRUDEDSURFACE', 'LOFTEDSURFACE', 'SWEPTSURFACE', 'HELIX',
+  ]);
+  const IGNORED_DXF_ANNOTATION_TYPES = new Set([
+    'TEXT', 'MTEXT', 'DIMENSION', 'LEADER', 'MLEADER', 'ATTRIB', 'ATTDEF',
   ]);
   function hasNonzeroDxfBulge(pairs) {
     return pairs.some((pair) => pair.code === 42 && Math.abs(number(pair.value, 0)) > 1e-12);
   }
+  function dxfEntityLabel(entity, index) {
+    const layer = entity.pairs.find((pair) => pair.code === 8)?.value;
+    const handle = entity.pairs.find((pair) => pair.code === 5)?.value;
+    return `${entity.type} #${index + 1}${handle ? `（handle ${handle}` : ''}${layer ? `${handle ? '，' : '（'}layer ${layer}` : ''}${handle || layer ? '）' : ''}`;
+  }
+  function rejectNonzeroDxfValues(entity, index, codes, label, errorCode) {
+    const values = entity.pairs.filter((pair) => codes.includes(pair.code));
+    const malformed = values.find((pair) => !Number.isFinite(Number(pair.value)));
+    if (malformed) throw dxfValidationError('DXF_INVALID_NUMBER', `${dxfEntityLabel(entity, index)} 的 ${label}（组码 ${malformed.code}）不是有限数值`);
+    const invalid = values.find((pair) => Math.abs(Number(pair.value)) > 1e-12);
+    if (invalid) throw dxfValidationError(errorCode, `${dxfEntityLabel(entity, index)} 的 ${label}（组码 ${invalid.code}）为 ${invalid.value}；当前只接受世界 XY 平面的零厚度二维轮廓`);
+  }
+  function validateDxfExtrusion(entity, index) {
+    const hasExtrusion = entity.pairs.some((pair) => pair.code === 210 || pair.code === 220 || pair.code === 230);
+    if (!hasExtrusion) return;
+    const x = firstNumber(entity.pairs, 210, 0); const y = firstNumber(entity.pairs, 220, 0); const z = firstNumber(entity.pairs, 230, 1);
+    if (![x, y, z].every(Number.isFinite)) {
+      throw dxfValidationError('DXF_INVALID_NUMBER', `${dxfEntityLabel(entity, index)} 的 extrusion normal 含非有限数值`);
+    }
+    if (Math.abs(x) > 1e-12 || Math.abs(y) > 1e-12 || Math.abs(z - 1) > 1e-12) {
+      throw dxfValidationError('DXF_UNSUPPORTED_EXTRUSION', `${dxfEntityLabel(entity, index)} 的 extrusion normal = (${x}, ${y}, ${z})；当前只接受默认 +Z 法向，不会静默执行 OCS/WCS 投影`);
+    }
+  }
+  function validatePlanarDxfEntity(entity, index) {
+    validateDxfExtrusion(entity, index);
+    if (entity.type === 'LINE') rejectNonzeroDxfValues(entity, index, [30, 31], 'Z 坐标', 'DXF_NON_PLANAR_Z');
+    else if (entity.type === 'ARC' || entity.type === 'CIRCLE') rejectNonzeroDxfValues(entity, index, [30], '圆心 Z 坐标', 'DXF_NON_PLANAR_Z');
+    else if (entity.type === 'LWPOLYLINE') rejectNonzeroDxfValues(entity, index, [38], 'elevation', 'DXF_NONZERO_ELEVATION');
+    else if (entity.type === 'POLYLINE' || entity.type === 'VERTEX') rejectNonzeroDxfValues(entity, index, [30], 'Z/elevation', 'DXF_NON_PLANAR_Z');
+    rejectNonzeroDxfValues(entity, index, [39], 'thickness', 'DXF_NONZERO_THICKNESS');
+    if (entity.type === 'LWPOLYLINE' || entity.type === 'POLYLINE' || entity.type === 'VERTEX') {
+      rejectNonzeroDxfValues(entity, index, [40, 41, 43], 'polyline width', 'DXF_NONZERO_WIDTH');
+      const malformedBulge = entity.pairs.find((pair) => pair.code === 42 && !Number.isFinite(Number(pair.value)));
+      if (malformedBulge) throw dxfValidationError('DXF_INVALID_NUMBER', `${dxfEntityLabel(entity, index)} 的 bulge（组码 42）不是有限数值`);
+      if (hasNonzeroDxfBulge(entity.pairs)) throw dxfValidationError('DXF_UNSUPPORTED_BULGE', `${dxfEntityLabel(entity, index)} 含非零 bulge（组码 42）；当前不会把圆弧段静默拉直`);
+    }
+  }
+  function requireFiniteDxfValues(entity, index, values, description) {
+    if (!values.every(Number.isFinite)) throw dxfValidationError('DXF_INVALID_NUMBER', `${dxfEntityLabel(entity, index)} 缺少有限的 ${description}；实体不会被静默丢弃`);
+  }
   function parseDxf(text) {
-    if (!/\bSECTION\b/i.test(text) || !/\bENTITIES\b/i.test(text)) throw new Error('未找到 ASCII DXF 的 ENTITIES 段。');
+    if (!/\bSECTION\b/i.test(text) || !/\bENTITIES\b/i.test(text)) throw dxfValidationError('DXF_MISSING_ENTITIES', '未找到 ASCII DXF 的 ENTITIES 段。');
     const chunks = entityChunks(text); const paths = []; const unsupported = new Set(); const rejectedGeometry = new Set();
     for (let i = 0; i < chunks.length; i += 1) { const e = chunks[i];
       if (REJECTED_DXF_GEOMETRY_TYPES.has(e.type)) { rejectedGeometry.add(e.type); continue; }
-      if (e.type === 'LINE') { const start = point(firstNumber(e.pairs, 10), firstNumber(e.pairs, 20)); const end = point(firstNumber(e.pairs, 11), firstNumber(e.pairs, 21)); if ([start.x, start.y, end.x, end.y].every(Number.isFinite)) paths.push({ type: 'line', start, end }); }
-      else if (e.type === 'LWPOLYLINE') { if (hasNonzeroDxfBulge(e.pairs)) rejectedGeometry.add('LWPOLYLINE bulge（组码 42）'); const points = xyFromPairs(e.pairs); if (points.length > 1) paths.push({ type: 'polyline', points, closed: Boolean(firstNumber(e.pairs, 70, 0) & 1) }); }
-      else if (e.type === 'POLYLINE') { const flags = firstNumber(e.pairs, 70, 0); if (flags & (8 | 16 | 64)) rejectedGeometry.add('3D / 网格 POLYLINE'); const points = []; let j = i + 1; while (j < chunks.length && chunks[j].type === 'VERTEX') { if (hasNonzeroDxfBulge(chunks[j].pairs)) rejectedGeometry.add('POLYLINE / VERTEX bulge（组码 42）'); const x = firstNumber(chunks[j].pairs, 10); const y = firstNumber(chunks[j].pairs, 20); if (Number.isFinite(x) && Number.isFinite(y)) points.push(point(x, y)); j += 1; } if (points.length > 1) paths.push({ type: 'polyline', points, closed: Boolean(flags & 1) }); i = j - 1; }
-      else if (e.type === 'CIRCLE') { const center = point(firstNumber(e.pairs, 10), firstNumber(e.pairs, 20)); const radius = firstNumber(e.pairs, 40); if ([center.x, center.y, radius].every(Number.isFinite) && radius > 0) paths.push({ type: 'circle', center, radius }); }
-      else if (e.type === 'ARC') { const center = point(firstNumber(e.pairs, 10), firstNumber(e.pairs, 20)); const radius = firstNumber(e.pairs, 40); const startAngle = radians(firstNumber(e.pairs, 50)); const endAngle = radians(firstNumber(e.pairs, 51)); if ([center.x, center.y, radius, startAngle, endAngle].every(Number.isFinite) && radius > 0) paths.push({ type: 'arc', center, radius, startAngle, endAngle }); }
-      else if (!['VERTEX', 'SEQEND', 'EOF'].includes(e.type)) unsupported.add(e.type);
+      if (e.type === 'LINE') {
+        validatePlanarDxfEntity(e, i);
+        const start = point(firstNumber(e.pairs, 10), firstNumber(e.pairs, 20)); const end = point(firstNumber(e.pairs, 11), firstNumber(e.pairs, 21));
+        requireFiniteDxfValues(e, i, [start.x, start.y, end.x, end.y], '起终点 XY 坐标');
+        if (length(subtract(end, start)) <= 1e-12) throw dxfValidationError('DXF_ZERO_LENGTH', `${dxfEntityLabel(e, i)} 是零长度 LINE`);
+        paths.push({ type: 'line', start, end });
+      } else if (e.type === 'LWPOLYLINE') {
+        validatePlanarDxfEntity(e, i);
+        const flags = firstNumber(e.pairs, 70, 0);
+        if (!Number.isInteger(flags) || (flags & ~(1 | 128))) throw dxfValidationError('DXF_UNSUPPORTED_FLAGS', `${dxfEntityLabel(e, i)} 含当前不支持的 flags ${flags}`);
+        const expectedVertices = e.pairs.filter((pair) => pair.code === 10).length;
+        const declaredVertices = firstNumber(e.pairs, 90, expectedVertices);
+        if (!Number.isInteger(declaredVertices) || declaredVertices !== expectedVertices) throw dxfValidationError('DXF_INVALID_VERTEX_COUNT', `${dxfEntityLabel(e, i)} 声明 ${declaredVertices} 个顶点，但实际读取到 ${expectedVertices} 个 X 坐标`);
+        const points = xyFromPairs(e.pairs);
+        if (points.length !== expectedVertices || points.length < 2) throw dxfValidationError('DXF_TOO_FEW_VERTICES', `${dxfEntityLabel(e, i)} 顶点坐标不完整或少于 2 个`);
+        paths.push({ type: 'polyline', points, closed: Boolean(flags & 1) });
+      } else if (e.type === 'POLYLINE') {
+        validatePlanarDxfEntity(e, i);
+        const flags = firstNumber(e.pairs, 70, 0);
+        if (!Number.isInteger(flags) || (flags & ~(1 | 128))) throw dxfValidationError('DXF_UNSUPPORTED_FLAGS', `${dxfEntityLabel(e, i)} 含当前不支持的 3D/网格/拟合 flags ${flags}`);
+        const points = []; let j = i + 1;
+        while (j < chunks.length && chunks[j].type === 'VERTEX') {
+          const vertex = chunks[j]; validatePlanarDxfEntity(vertex, j);
+          const vertexFlags = firstNumber(vertex.pairs, 70, 0);
+          if (!Number.isInteger(vertexFlags) || vertexFlags !== 0) throw dxfValidationError('DXF_UNSUPPORTED_FLAGS', `${dxfEntityLabel(vertex, j)} 含当前不支持的 VERTEX flags ${vertexFlags}`);
+          const x = firstNumber(vertex.pairs, 10); const y = firstNumber(vertex.pairs, 20);
+          requireFiniteDxfValues(vertex, j, [x, y], '顶点 XY 坐标');
+          points.push(point(x, y)); j += 1;
+        }
+        if (chunks[j]?.type !== 'SEQEND') throw dxfValidationError('DXF_MISSING_SEQEND', `${dxfEntityLabel(e, i)} 缺少 SEQEND`);
+        if (points.length < 2) throw dxfValidationError('DXF_TOO_FEW_VERTICES', `${dxfEntityLabel(e, i)} 少于 2 个有效 VERTEX`);
+        paths.push({ type: 'polyline', points, closed: Boolean(flags & 1) }); i = j - 1;
+      } else if (e.type === 'CIRCLE') {
+        validatePlanarDxfEntity(e, i);
+        const center = point(firstNumber(e.pairs, 10), firstNumber(e.pairs, 20)); const radius = firstNumber(e.pairs, 40);
+        requireFiniteDxfValues(e, i, [center.x, center.y, radius], '圆心与半径');
+        if (!(radius > 0)) throw dxfValidationError('DXF_INVALID_RADIUS', `${dxfEntityLabel(e, i)} 半径必须大于 0`);
+        paths.push({ type: 'circle', center, radius });
+      } else if (e.type === 'ARC') {
+        validatePlanarDxfEntity(e, i);
+        const center = point(firstNumber(e.pairs, 10), firstNumber(e.pairs, 20)); const radius = firstNumber(e.pairs, 40);
+        const startAngle = radians(firstNumber(e.pairs, 50)); const endAngle = radians(firstNumber(e.pairs, 51));
+        requireFiniteDxfValues(e, i, [center.x, center.y, radius, startAngle, endAngle], '圆心、半径与起止角');
+        if (!(radius > 0)) throw dxfValidationError('DXF_INVALID_RADIUS', `${dxfEntityLabel(e, i)} 半径必须大于 0`);
+        paths.push({ type: 'arc', center, radius, startAngle, endAngle });
+      } else if (IGNORED_DXF_ANNOTATION_TYPES.has(e.type)) unsupported.add(e.type);
+      else if (e.type === 'VERTEX') rejectedGeometry.add('孤立 VERTEX');
+      else if (!['SEQEND', 'EOF'].includes(e.type)) rejectedGeometry.add(e.type);
     }
-    if (rejectedGeometry.size) throw new Error(`DXF 包含当前不能无损解析的轮廓几何：${[...rejectedGeometry].join('、')}。请在 CAD 中炸开 BLOCK / INSERT，并把曲线转为 LINE / ARC 或无 bulge 的 POLYLINE 后重新导入；本页不会静默改变牙形。`);
-    if (!paths.length) throw new Error('DXF 中没有可用于轮廓的 LINE / POLYLINE / CIRCLE / ARC 实体。');
+    if (rejectedGeometry.size) throw dxfValidationError('DXF_UNSUPPORTED_GEOMETRY', `DXF 包含当前不能无损解析的轮廓几何：${[...rejectedGeometry].join('、')}。请在 CAD 中炸开 BLOCK / INSERT，并把曲线转为 LINE / ARC 或无 bulge 的 POLYLINE 后重新导入；本页不会静默改变牙形。`);
+    if (!paths.length) throw dxfValidationError('DXF_NO_SUPPORTED_GEOMETRY', 'DXF 中没有可用于轮廓的 LINE / POLYLINE / CIRCLE / ARC 实体。');
     return { paths, entityCount: chunks.length, unsupported: [...unsupported] };
   }
   function scalePath(path, scale) { const output = clonePath(path); if (output.points) output.points = output.points.map((p) => scalePoint(p, scale)); if (output.start) output.start = scalePoint(output.start, scale); if (output.end) output.end = scalePoint(output.end, scale); if (output.center) output.center = scalePoint(output.center, scale); if (Number.isFinite(output.radius)) output.radius *= scale; return output; }
   function selectedScale(detected) { const unit = state.params.dxfUnit === 'auto' ? (detected || 'mm') : state.params.dxfUnit; return { unit, scale: UNIT_SCALES[unit] || .001 }; }
-  function createImportedDrawing(role, name, rawText) { const parsed = parseDxf(rawText); const detectedUnit = detectedDxfUnit(rawText); const scale = selectedScale(detectedUnit); return makeDrawing(parsed.paths.map((path) => scalePath(path, scale.scale)), { role, name, rawText, rawFileName: name, detectedUnit, unit: scale.unit, unitScale: scale.scale, entityCount: parsed.entityCount, unsupported: parsed.unsupported, sourceKind: 'imported', sourceFormat: `DXF · ${scale.unit}` }); }
-  function reprocessImportedDrawings() { for (const role of ['shovel', 'weapon']) { const old = state.drawings[role]; if (!old?.rawText) continue; const pivotRaw = scalePoint(old.pivot, 1 / old.unitScale); const originRaw = scalePoint(old.origin, 1 / old.unitScale); const next = createImportedDrawing(role, old.rawFileName || old.name, old.rawText); next.pivot = scalePoint(pivotRaw, next.unitScale); next.origin = scalePoint(originRaw, next.unitScale); state.drawings[role] = next; } renderDrawingStatus(); }
+  function createImportedDrawing(role, name, rawText) {
+    const parsed = parseDxf(rawText); const detectedUnit = detectedDxfUnit(rawText); const scale = selectedScale(detectedUnit);
+    const drawing = makeDrawing(parsed.paths.map((path) => scalePath(path, scale.scale)), { role, name, rawText, rawFileName: name, detectedUnit, unit: scale.unit, unitScale: scale.scale, entityCount: parsed.entityCount, unsupported: parsed.unsupported, sourceKind: 'imported', sourceFormat: `DXF · ${scale.unit}` });
+    drawingSolid(drawing, { strict: true });
+    return drawing;
+  }
+  function reprocessImportedDrawings() {
+    const replacements = new Map();
+    for (const role of ['shovel', 'weapon']) {
+      const old = state.drawings[role]; if (!old?.rawText) continue;
+      const pivotRaw = scalePoint(old.pivot, 1 / old.unitScale); const originRaw = scalePoint(old.origin, 1 / old.unitScale);
+      const next = createImportedDrawing(role, old.rawFileName || old.name, old.rawText);
+      next.pivot = scalePoint(pivotRaw, next.unitScale); next.origin = scalePoint(originRaw, next.unitScale);
+      replacements.set(role, next);
+    }
+    replacements.forEach((drawing, role) => { state.drawings[role] = drawing; });
+    renderDrawingStatus();
+  }
   function drawingStatus(role) {
     const d = state.drawings[role]; const name = role === 'shovel' ? '叉子' : '武器'; const b = d.bounds;
     const parametric = role === 'shovel' ? state.params.paramForkEnabled : state.params.paramWeaponEnabled;
@@ -7008,7 +7439,7 @@
     const fork = state.params.paramForkEnabled ? '测试叉面' : state.drawings.shovel.name;
     $('#fileSummary').textContent = `当前求解：${weapon} · ${fork}`;
   }
-  async function importDrawing(file, role) { if (!file.name.toLowerCase().endsWith('.dxf')) { showToast('此版本请先将图纸导出为 ASCII DXF。', 'warning'); return; } try { const raw = await file.text(); state.drawings[role] = createImportedDrawing(role, file.name, raw); if (role === 'weapon') state.params.tipRadius = Math.max(1, Math.round(getMaxWeaponRadius() * 1000)); syncInputs(); renderDrawingStatus(); clearEvents(); resetSimulation(); addEvent(`已导入 ${role === 'shovel' ? '叉子' : '武器'} DXF：${file.name}`); showToast('DXF 已导入，保留 CAD (0,0) mm 作为局部原点。'); } catch (error) { const card = $(`#${role}DrawingCard`); card.classList.add('error'); $(`#${role}DrawingStatus`).textContent = `解析失败：${error.message}`; showToast(`DXF 解析失败：${error.message}`, 'error'); } }
+  async function importDrawing(file, role) { if (!file.name.toLowerCase().endsWith('.dxf')) { showToast('此版本请先将图纸导出为 ASCII DXF。', 'warning'); return; } try { const raw = await file.text(); state.drawings[role] = createImportedDrawing(role, file.name, raw); invalidateMassForDrawingRole(role); if (role === 'weapon') state.params.tipRadius = Math.max(1, Math.round(getMaxWeaponRadius() * 1000)); syncInputs(); renderDrawingStatus(); clearEvents(); resetSimulation(); addEvent(`已导入 ${role === 'shovel' ? '叉子' : '武器'} DXF：${file.name}`); showToast('DXF 已导入；请填写新部件的实测/等效质量后求解。', 'warning'); } catch (error) { const card = $(`#${role}DrawingCard`); card.classList.add('error'); $(`#${role}DrawingStatus`).textContent = `解析失败：${error.message}`; showToast(`DXF 解析失败：${error.message}`, 'error'); } }
 
   function resizeCanvas() { if (!state.canvas) return; const rect = state.canvas.getBoundingClientRect(); const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1)); const width = Math.round(rect.width * dpr); const height = Math.round(rect.height * dpr); if (state.canvas.width !== width || state.canvas.height !== height) { state.canvas.width = width; state.canvas.height = height; } state.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); if (!state.camera.center || !state.camera.scale) fitCamera(rect.width, rect.height); drawScene(); }
   function collectScenePoints() {
@@ -7603,6 +8034,13 @@
       updateStatus('回放已暂停', 'paused'); updateReadouts();
       return;
     }
+    const massStatus = rigMassInputStatus();
+    if (!massStatus.valid || state.sim.creationError) {
+      const message = !massStatus.valid ? massStatus.message : state.sim.creationError;
+      updateStatus(!massStatus.valid ? '待补武器 / 叉子质量' : '刚体场景参数无效', 'warning');
+      showToast(message, 'error'); updateTransport();
+      return;
+    }
     if (state.trajectory?.building) { state.trajectory.autoPlay = true; paintTrajectoryProgress(true); return; }
     if (!state.trajectory?.ready) { startTrajectoryBuild({ autoPlay: true }); return; }
     if (state.playheadTick >= state.trajectory.frames.length - 1) {
@@ -7625,6 +8063,11 @@
   }
   function stepOnce() {
     if (state.sim.running) setRunning(false);
+    const massStatus = rigMassInputStatus();
+    if (!massStatus.valid || state.sim.creationError) {
+      showToast(!massStatus.valid ? massStatus.message : state.sim.creationError, 'error'); updateTransport();
+      return;
+    }
     if (state.trajectory?.building) return;
     if (!state.trajectory?.ready) { startTrajectoryBuild({ pendingSeekTick: 1 }); return; }
     applyPlaybackFrame(state.playheadTick + 1, { render: false });
@@ -7683,14 +8126,14 @@
 
   async function importDrawingChecked(file, role) {
     if (!file.name.toLowerCase().endsWith('.dxf')) { showToast('此版本请先将图纸导出为 ASCII DXF。', 'warning'); return; }
-    // File decoding is asynchronous. Cancel any in-flight trajectory now so
-    // it cannot finish against geometry that is about to be replaced.
-    if (state.trajectory) resetSimulation();
     const previousDrawing = state.drawings[role];
     const previousRadius = state.params.tipRadius;
     try {
       const raw = await file.text();
-      state.drawings[role] = createImportedDrawing(role, file.name, raw);
+      // Parse and validate the complete candidate before touching the live
+      // drawing. A rejected file must not cancel or mutate the current run.
+      const candidate = createImportedDrawing(role, file.name, raw);
+      state.drawings[role] = candidate;
       if (role === 'weapon') state.params.tipRadius = Math.max(1, Math.round(getMaxWeaponRadius() * 1000));
       if (!validateGroundClearance($('[data-param="weaponSceneY"]'))) {
         state.drawings[role] = previousDrawing;
@@ -7698,9 +8141,10 @@
         syncInputs(); drawScene();
         return;
       }
+      invalidateMassForDrawingRole(role);
       syncInputs(); renderDrawingStatus(); clearEvents(); resetSimulation();
       addEvent(`已导入 ${role === 'shovel' ? '叉子' : '武器'} DXF：${file.name}`);
-    showToast('DXF 已导入，保留 CAD (0,0) mm 作为局部原点。');
+      showToast('DXF 已导入；请填写新部件的实测/等效质量后求解。', 'warning');
     } catch (error) {
       state.drawings[role] = previousDrawing;
       state.params.tipRadius = previousRadius;
@@ -7811,26 +8255,36 @@
     state.canvas = $('#simCanvas'); state.ctx = state.canvas.getContext('2d'); state.drawings.shovel = defaultDrawing('shovel'); state.drawings.weapon = defaultDrawing('weapon'); alignGeometryToFloor();
     state.metrics = computeMetrics(); state.sim = createSimulation(); setAdvancedEnabled(false); normaliseEngineeringReadouts(); syncInputs(); renderDrawingStatus(); bindEventsV2(); clearEvents(); addEvent('载入内置：新单牙大武器.DXF 与 厚叉子.DXF；场景 (0,0) mm 独立，叉子只相对武器局部原点定位。'); if (state.rapier) { const backendLabel = state.rapierBackend === 'simd' ? 'SIMD 加速' : '兼容'; addEvent(`物理：Rapier 2D ${backendLabel}后端联立求解底盘、转轴武器、真实 DXF 刀/叉、靶子与支撑地面。`, state.rapierFallbackReason ? 'warning' : 'info'); if (state.rapierFallbackReason) addEvent(`当前浏览器未启用 SIMD，已自动回退兼容后端：${state.rapierFallbackReason}`, 'warning'); } else addEvent(`物理引擎未启用：${state.rapierError || '使用保底求解器'}`, 'warning'); resizeCanvas(); updateReadouts(); if (state.rapier) updateStatus(state.rapierBackend === 'simd' ? 'Rapier SIMD 已就绪' : 'Rapier 兼容后端已就绪', state.rapierFallbackReason ? 'warning' : 'ready'); else updateStatus('物理引擎未启用', 'warning');
     window.BiteSim = {
-      version: '1.0.0',
+      version: '1.1.0',
       reset: () => { clearEvents(); resetSimulation(); },
       setParams(values = {}) {
         const previous = { ...state.params };
-        Object.entries(migrateLegacyPublicParams(values)).forEach(([key, value]) => {
-          if (Object.prototype.hasOwnProperty.call(DEFAULTS, key)) state.params[key] = value;
-        });
-        const geometryStatus = parameterGeometryStatus();
-        const clearanceStatus = groundClearanceStatus();
-        const candidateMetrics = computeMetrics();
-        const massError = weaponMassConsistencyError(
-          candidateMetrics,
-          positive(state.params.forkMass, DEFAULTS.forkMass),
-          positive(state.params.robotMass, .01),
-        );
-        if (!geometryStatus.valid || !clearanceStatus.valid || massError) {
-          state.params = previous; syncInputs(); renderDrawingStatus();
-          throw new Error(!geometryStatus.valid
-            ? geometryStatus.reason
-            : (!clearanceStatus.valid ? clearanceMessage(clearanceStatus) : massError));
+        const previousDrawings = { ...state.drawings };
+        const incoming = migrateLegacyPublicParams(values);
+        try {
+          Object.entries(incoming).forEach(([key, value]) => {
+            if (Object.prototype.hasOwnProperty.call(DEFAULTS, key)) state.params[key] = value;
+          });
+          if (Object.prototype.hasOwnProperty.call(incoming, 'dxfUnit') && state.params.dxfUnit !== previous.dxfUnit) {
+            reprocessImportedDrawings();
+          }
+          const geometryStatus = parameterGeometryStatus();
+          const clearanceStatus = groundClearanceStatus();
+          const candidateMetrics = computeMetrics();
+          const massError = weaponMassConsistencyError(
+            candidateMetrics,
+            Number(state.params.forkMass),
+            Number(state.params.robotMass),
+          );
+          if (!geometryStatus.valid || !clearanceStatus.valid || massError) {
+            throw new Error(!geometryStatus.valid
+              ? geometryStatus.reason
+              : (!clearanceStatus.valid ? clearanceMessage(clearanceStatus) : massError));
+          }
+        } catch (error) {
+          state.params = previous; state.drawings = previousDrawings;
+          syncInputs(); renderDrawingStatus();
+          throw error;
         }
         syncInputs(); renderDrawingStatus(); resetSimulation();
         return { ...state.params };
@@ -7900,7 +8354,7 @@
           angle: state.sim.forkAngle,
           omega: state.sim.forkOmega,
           grounded: Boolean(state.sim.forkGrounded),
-          mass: state.sim.physics?.forkMass ?? positive(state.params.forkMass, .03),
+          mass: state.sim.physics?.forkMass ?? finitePositiveMassOrNull(state.params.forkMass),
         },
         targetPushedByFork: state.sim.targetPushedByFork,
         weaponScene: weaponSceneOrigin(),
@@ -7928,10 +8382,12 @@
           normalImpulse: state.sim.lastImpact.normalImpulse,
           tangentialImpulse: state.sim.lastImpact.tangentialImpulse,
           targetEnergyGain: state.sim.lastImpact.targetEnergyGain,
+          targetMechanicalGain: state.sim.lastImpact.targetMechanicalGain,
           rotorEnergyLoss: state.sim.lastImpact.rotorEnergyLoss,
           chassisEnergyLoss: state.sim.lastImpact.chassisEnergyLoss,
           forkEnergyLoss: state.sim.lastImpact.forkEnergyLoss,
           externalWork: state.sim.lastImpact.externalWork,
+          namedDissipation: state.sim.lastImpact.namedDissipation,
           materialWork: state.sim.lastImpact.materialWork,
           boundaryWork: state.sim.lastImpact.boundaryWork,
           constraintEnergyExchange: state.sim.lastImpact.constraintEnergyExchange,
@@ -7940,14 +8396,24 @@
           numericalEnergyGain: state.sim.lastImpact.numericalEnergyGain,
           energyTolerance: state.sim.lastImpact.energyTolerance,
           energyConverged: state.sim.lastImpact.energyConverged,
+          episodeComplete: state.sim.lastImpact.episodeComplete,
           materialTickConverged: state.sim.lastImpact.materialTickConverged,
           materialConvergenceChecks: state.sim.lastImpact.materialConvergenceChecks,
         } : null,
         cad: (() => {
           const geometry = weaponCadCollisionGeometry();
+          const solid = drawingSolid(state.drawings.weapon);
+          const triangulatedArea = (state.sim.physics?.weaponColliderMetadata || [])
+            .filter((entry) => entry.kind === 'cad-weapon-solid-triangle')
+            .reduce((sum, entry) => sum + Math.abs(polygonArea(entry.triangleLoop || [])), 0);
           return {
             sourceOutlinePoints: geometry.sourceOutline.length,
             colliderLoopPoints: state.sim.physics?.weaponLoop?.length ?? 0,
+            ringCount: solid.rings.length,
+            holeCount: solid.holes.length,
+            netArea: solid.netArea,
+            triangulatedArea,
+            maxEndpointAdjustment: solid.maxEndpointAdjustment,
             toothCount: geometry.teeth.length,
             teeth: geometry.teeth.map((tooth) => ({ index: tooth.index, startIndex: tooth.startIndex, endIndex: tooth.endIndex })),
           };
@@ -7996,10 +8462,21 @@
             colliderMode: state.sim.physics?.forkMode || null,
             initialAngle: state.sim.physics?.initialForkAngle ?? null,
             zeroThickness: Boolean(state.params.paramForkEnabled),
+            holeCount: state.params.paramForkEnabled ? 0 : drawingSolid(state.drawings.shovel).holes.length,
+            area: state.sim.physics?.forkMassProperties?.area ?? null,
+            massPropertySource: state.sim.physics?.forkMassProperties?.source ?? null,
+            massProperties: state.sim.physics?.forkMassProperties ? {
+              mass: state.sim.physics.forkMassProperties.mass,
+              com: { ...state.sim.physics.forkMassProperties.com },
+              inertia: state.sim.physics.forkMassProperties.inertia,
+              area: state.sim.physics.forkMassProperties.area,
+            } : null,
           },
         },
         physics: {
-          mode: state.sim.creationError ? 'invalid-rig' : (state.sim.physics?.rigModel ? 'rapier-rig' : 'toi-fallback'),
+          mode: !rigMassInputStatus().valid
+            ? 'needs-input'
+            : (state.sim.creationError ? 'invalid-rig' : (state.sim.physics?.rigModel ? 'rapier-rig' : 'toi-fallback')),
           backend: state.rapierBackend,
           backendVersion: state.rapier?.version?.() || null,
           simd: state.rapierBackend === 'simd',
@@ -8018,7 +8495,7 @@
           forkJointErrorTolerance: rigForkJointErrorTolerance(),
           minForkFloorClearance: state.sim.rigForkMinFloorClearance,
           massBudget: {
-            robot: positive(state.params.robotMass, .01),
+            robot: finitePositiveMassOrNull(state.params.robotMass),
             weapon: state.sim.physics?.weaponMass ?? state.metrics.weaponMass,
             fork: state.sim.physics?.forkMass ?? state.metrics.forkMassInput,
             chassis: state.sim.physics?.chassisMass ?? state.metrics.chassisMassBudget,
@@ -8068,17 +8545,31 @@
     };
     window.BiteSim.importDxfText = (role, text, name = `${role}.dxf`) => {
       if (!['shovel', 'weapon'].includes(role)) throw new Error('role must be shovel or weapon');
-      const previousDrawing = state.drawings[role]; const previousRadius = state.params.tipRadius;
-      state.drawings[role] = createImportedDrawing(role, name, text);
-      if (role === 'weapon') state.params.tipRadius = Math.round(getMaxWeaponRadius() * 1000);
-      if (!groundClearanceStatus().valid) {
-        state.drawings[role] = previousDrawing; state.params.tipRadius = previousRadius; syncInputs();
-        throw new Error('Imported geometry would enter the floor. Adjust the field height or fork offset first.');
+      const previousDrawing = state.drawings[role]; const previousParams = { ...state.params };
+      try {
+        state.drawings[role] = createImportedDrawing(role, name, text);
+        if (role === 'weapon') state.params.tipRadius = Math.round(getMaxWeaponRadius() * 1000);
+        if (!groundClearanceStatus().valid) {
+          throw new Error('Imported geometry would enter the floor. Adjust the field height or fork offset first.');
+        }
+        invalidateMassForDrawingRole(role);
+        syncInputs(); renderDrawingStatus(); resetSimulation();
+      } catch (error) {
+        state.drawings[role] = previousDrawing; state.params = previousParams;
+        syncInputs(); renderDrawingStatus();
+        throw error;
       }
-      syncInputs(); renderDrawingStatus(); resetSimulation();
     };
     // Deterministic scheduling probes are exposed only for the local QA URL.
     if (new URLSearchParams(window.location.search).has('qa')) {
+      window.BiteSim.__qaMatchGeometricContactsToSolver = (rawContacts, rawDistances, solverContacts, tolerance = GEOMETRY_CLEARANCE_EPS) => {
+        const matching = matchGeometricContactsToSolver(rawContacts, rawDistances, solverContacts, tolerance);
+        return {
+          pairs: [...matching.geometricToSolver.entries()].map(([geometricContactIndex, solverContactIndex]) => ({ geometricContactIndex, solverContactIndex })),
+          unmatchedGeometricContacts: [...matching.unmatchedGeometricContacts],
+          unmatchedSolverContacts: [...matching.unmatchedSolverContacts],
+        };
+      };
       window.BiteSim.__qaSetBoundaryLimit = (value) => {
         const parsed = Math.floor(Number(value));
         state.qaRigBoundaryLimit = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
