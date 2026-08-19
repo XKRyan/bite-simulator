@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101724" />
+    <title>BITE LAB｜格斗机器人武器模拟</title>
+    <link rel="stylesheet" href="styles.css?v=1.0.0" />
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div>
+            <div class="eyebrow">ENGINEERING SANDBOX</div>
+            <h1>BITE LAB <span>武器啮入模拟器</span></h1>
+          </div>
+        </div>
+        <div class="top-actions">
+          <div id="appStatus" class="status-pill ready"><i></i><span>示例模型就绪</span></div>
+          <button id="toggleAdvanced" class="button ghost advanced-toggle" type="button" aria-expanded="false" title="只展开或收起输入；不会重置仿真或切换物理模型">高级参数（仅显示） <span aria-hidden="true">⌄</span></button>
+          <button id="openDwgHelp" class="button ghost" type="button">DWG 转换说明</button>
+          <button id="openModelNotes" class="button ghost" type="button">模型假设</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="sidebar controls-panel" aria-label="工程参数">
+          <div class="side-heading">
+            <div>
+              <div class="eyebrow">SETUP</div>
+              <h2>输入与定位</h2>
+            </div>
+            <button id="restoreDefaults" class="text-button" type="button">恢复示例</button>
+          </div>
+
+          <section class="settings-group preset-group" data-collapsible>
+            <div class="group-title-row"><h3>整机量级预设</h3><span class="tag orange">工程起点</span></div>
+            <label class="field wide-field">
+              <span>机器人量级与推荐靶子</span>
+              <select data-param="robotPreset" id="robotPreset">
+                <option value="150g">150 g 微型</option>
+                <option value="220g">220 g 蚂蚁</option>
+                <option value="454g">454 g 甲虫</option>
+                <option value="1.36kg">1.36 kg 羽量（推荐）</option>
+                <option value="5lb">5 lbs / 2.27 kg</option>
+                <option value="13.6kg">13.6 kg Feather</option>
+              <option value="110kg">110 kg Heavyweight（参数几何示例）</option>
+              </select>
+            </label>
+            <div class="inline-action-row"><button id="applyRobotPreset" class="button primary" type="button">套用量级 + 推荐靶子</button></div>
+            <p id="presetReadout" class="microcopy">1.36 kg：双 P2306 4S 降额示例；行驶默认为双 Blitz Lite 1604 2850KV + 29.16:1（4S 厂家测功基准）。</p>
+            <p id="geometryScaleWarning" class="parametric-warning hidden" role="status"></p>
+          </section>
+
+          <section class="settings-group import-group" data-collapsible>
+            <div class="group-title-row">
+              <h3>图纸导入</h3>
+              <span class="tag">DXF</span>
+            </div>
+            <p class="hint">已内置你提供的武器与厚叉子 DXF；两者均以 CAD (0,0) mm 作为局部原点。DWG 保留转换说明。</p>
+            <div class="drawing-card" id="shovelDrawingCard">
+              <div class="drawing-icon shovel-icon" aria-hidden="true"></div>
+              <div class="drawing-copy">
+                <strong>铲子 / 叉子</strong>
+                <span id="shovelDrawingStatus">内置：厚叉子.DXF</span>
+              </div>
+              <div class="drawing-actions" aria-label="叉子导入、镜像与测试叉面切换">
+                <label class="mirror-mini" title="绕叉子 CAD 局部原点左右镜像"><input data-param="shovelMirrorX" type="checkbox" /><span>镜像 X</span></label>
+                <label class="mirror-mini" title="绕叉子 CAD 局部原点上下镜像"><input data-param="shovelMirrorY" type="checkbox" /><span>镜像 Y</span></label>
+                <label class="mini-button" title="导入铲子 DXF">DXF<input id="shovelFile" type="file" accept=".dxf" hidden /></label>
+                <label class="test-shape-toggle" title="临时使用参数化叉面；已导入 DXF 会保留，关闭即可恢复">
+                  <input data-param="paramForkEnabled" type="checkbox" aria-describedby="parametricModeMemoryNote" />
+                  <span>测试叉面</span>
+                </label>
+              </div>
+            </div>
+            <div class="drawing-card" id="weaponDrawingCard">
+              <div class="drawing-icon weapon-icon" aria-hidden="true"></div>
+              <div class="drawing-copy">
+                <strong>旋转武器</strong>
+                <span id="weaponDrawingStatus">内置：新单牙大武器</span>
+              </div>
+              <div class="drawing-actions" aria-label="武器导入、镜像与测试齿形切换">
+                <label class="mirror-mini" title="绕武器转轴左右镜像"><input data-param="weaponMirrorX" type="checkbox" /><span>镜像 X</span></label>
+                <label class="mirror-mini" title="绕武器转轴上下镜像"><input data-param="weaponMirrorY" type="checkbox" /><span>镜像 Y</span></label>
+                <label class="mini-button" title="导入武器 DXF">DXF<input id="weaponFile" type="file" accept=".dxf" hidden /></label>
+                <label class="test-shape-toggle" title="临时使用参数化齿形；已导入 DXF 会保留，关闭即可恢复">
+                  <input data-param="paramWeaponEnabled" type="checkbox" aria-describedby="parametricModeMemoryNote" />
+                  <span>测试齿形</span>
+                </label>
+              </div>
+            </div>
+            <p id="parametricModeMemoryNote" class="microcopy geometry-memory-note">两个测试开关可同时开启、单独开启或全部关闭；全部关闭即使用正常 DXF。开关只临时替换对应测试几何，不会删除或覆盖已导入图纸，关闭即可恢复。材料 / 刚体接触模型仍由“接触模型”独立选择。</p>
+            <label class="field compact-field">
+              <span>DXF 源文件单位 <em>导入后统一换算为 mm</em></span>
+              <select data-param="dxfUnit" id="dxfUnit">
+                <option value="mm">毫米 mm（默认）</option>
+                <option value="auto">按 DXF 单位自动识别</option>
+                <option value="in">英寸 in</option>
+                <option value="m">米 m</option>
+              </select>
+            </label>
+          </section>
+
+          <section id="paramWeaponSettings" class="settings-group parametric-geometry-settings hidden" data-parametric-panel="weapon" data-collapsible>
+            <div class="group-title-row">
+              <h3>测试齿形参数</h3>
+              <span class="tag orange">替代武器 DXF</span>
+            </div>
+            <p class="parametric-warning">仅临时替换武器齿形；叉子仍按自身开关选择测试叉面或当前 DXF。接触模型与材料参数不随此开关改变。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>武器齿数</span>
+                <div class="input-wrap"><input data-param="paramToothCount" type="number" value="1" step="1" min="1" max="32" /><b>齿</b></div>
+              </label>
+              <label class="field">
+                <span>齿相位角 <em>前角 / rake</em></span>
+                <div class="input-wrap"><input data-param="paramToothPhaseDeg" type="number" value="0" step="0.5" min="-89" max="89" /><b>°</b></div>
+              </label>
+              <label class="field">
+                <span>打击圆半径 R <em>轴心至齿尖</em></span>
+                <div class="input-wrap"><input data-param="paramToothLength" type="number" value="55" step="0.1" min="0.1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>牙长 L <em>齿根至齿尖工作线</em></span>
+                <div class="input-wrap"><input data-param="paramToothWorkLength" type="number" value="14" step="0.1" min="0.1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>齿根背撑厚度 t <em>XY 侧视；不是 Z 宽</em></span>
+                <div class="input-wrap"><input data-param="paramToothWidth" type="number" value="6" step="0.1" min="0.1" /><b>mm</b></div>
+              </label>
+            </div>
+            <p id="paramWeaponGeometryReadout" class="engineering-readout">测试齿形：等待按齿数、打击圆、迎击面与背撑参数生成有限实体。</p>
+            <p class="microcopy">各齿按 360° / 齿数等角均布。“齿相位角”严格定义为齿尖半径与直线迎击面之间的有符号前角；牙长 L 就是迎击面从齿根到齿尖的长度，背撑厚度 t 把它闭合成三角实体。正值表示沿武器实际逆时针旋转方向前倾、齿尖相对齿根更“抓入”；输入值始终是最终装配后的物理前角，X/Y 镜像只改变安装朝向，不会暗中反转输入语义。它不控制第 0 齿圆周位置，第 0 齿位置由“武器初始角度”控制。0–15° 正前角是常用工程起点；超过 20° 不会被界面武断拒绝，但需另行校核齿根强度。Z 向齿宽仍在高级区“武器宽度 Z”设置。材料删除继续受连续接触安全门约束。</p>
+          </section>
+
+          <section id="paramForkSettings" class="settings-group parametric-geometry-settings hidden" data-parametric-panel="fork" data-collapsible>
+            <div class="group-title-row">
+              <h3>测试叉面参数</h3>
+              <span class="tag orange">替代叉子 DXF</span>
+            </div>
+            <p class="parametric-warning">仅临时替换叉子作用面；武器仍按自身开关选择测试齿形或当前 DXF。接触模型与材料参数不随此开关改变。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>铰点至叉尖距离 D <em>左端原点—右端尖端</em></span>
+                <div class="input-wrap"><input data-param="paramForkTipDistance" type="number" value="72" step="0.1" min="0.1" /><b>mm</b></div>
+              </label>
+            </div>
+            <p id="paramForkGeometryReadout" class="engineering-readout">测试叉面：等待按左端铰点与叉尖距离生成一条理想无厚度线段。</p>
+            <p class="microcopy">测试叉面严格是一条无厚度刚体线段：局部原点 O=(0,0) 是左端铰点，T=(D,0) 是右端叉尖，不暗造圆角、侧视厚度或三角背板。装配时只绕固定铰点转动，使叉尖在第一帧就位于真实 Y=0 mm 地面；不会先下落，也不会移动或改写铰点—武器原点距离。叉子质量仍使用高级区的显式输入，线段惯量按均匀细杆计算。关闭后恢复叉子 DXF。</p>
+          </section>
+
+          <section class="settings-group" data-collapsible>
+            <div class="group-title-row">
+              <h3>几何与定位</h3>
+              <span class="tag teal">画布可点选</span>
+            </div>
+            <p class="hint">场景坐标（mm）以网格的 (0,0) mm 为基准；武器可独立放置。下方输入只固定叉子铰点相对武器原点的位置，不固定叉子的转角。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>武器轴心 X <em>相对场地原点</em></span>
+                <div class="input-wrap"><input data-param="weaponSceneX" type="number" step="1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>武器轴心 Y / 高度 <em>相对场地原点</em></span>
+                <div class="input-wrap"><input data-param="weaponSceneY" type="number" step="0.01" /><b>mm</b></div>
+              </label>
+            </div>
+            <div class="two-col cad-fork-offset-row">
+              <label class="field">
+                <span>叉子铰点 X <em>叉子原点相对武器原点</em></span>
+                <div class="input-wrap"><input data-param="shovelOffsetX" type="number" step="1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>叉子铰点 Y <em>叉子原点相对武器原点</em></span>
+                <div class="input-wrap"><input data-param="shovelOffsetY" type="number" step="0.01" /><b>mm</b></div>
+              </label>
+            </div>
+            <div class="two-col advanced-only">
+              <label class="field">
+                <span>叉子质量 <em>转动惯量按当前 DXF / 线段几何推导</em></span>
+                <div class="input-wrap"><input data-param="forkMass" type="number" value="0.03" step="0.001" min="0.0001" /><b>kg</b></div>
+              </label>
+            </div>
+            <div class="two-col geometry-radius-row">
+              <label class="field cad-weapon-radius-field">
+                <span>图纸刀尖半径 <em>闭合 DXF 锁定</em></span>
+                <div class="input-wrap"><input data-param="tipRadius" type="number" step="1" min="1" /><b>mm</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>设计齿数（仅无闭合外轮廓时后备）</span>
+                <div class="input-wrap"><input data-param="toothCount" type="number" step="1" min="1" /><b>齿</b></div>
+              </label>
+              <label class="field">
+                <span>武器初始角度 <em>DXF 姿态</em></span>
+                <div class="input-wrap"><input data-param="weaponInitialAngle" type="number" step="1" min="0" max="360" /><b>°</b></div>
+              </label>
+            </div>
+            <div class="inline-action-row">
+              <button id="setAxis" class="button secondary" type="button">在画布上设置转轴</button>
+              <button id="useDerivedRadius" class="text-button" type="button">使用图纸推导半径</button>
+            </div>
+            <p id="axisReadout" class="microcopy">武器局部原点：CAD (0, 0) mm；叉子 X/Y 仅定位铰点，当前叉子转角由重力与刚体接触求解。</p>
+          </section>
+
+          <section class="settings-group" data-collapsible>
+            <div class="group-title-row"><h3>武器系统</h3><span class="tag orange">带条件数据</span></div>
+            <label class="field wide-field">
+              <span>武器电机方案 <em>仅作工程起点，可编辑</em></span>
+              <select data-param="weaponMotorPreset" id="weaponMotorPreset">
+                <option value="dual2306">双 P2306 1750KV（4S 用户降额）</option>
+                <option value="singleP2306Official">单 P2306 V3 1750KV（6S 官方电输入）</option>
+                <option value="dualP2306Official">双 P2306 V3 1750KV（6S 表值×2）</option>
+                <option value="velox2306Conflict">V2306 1500KV“1969.9 W”（冲突，仅查看）</option>
+                <option value="single2212">单 X2212 V3 1400KV（4S / APC7060）</option>
+                <option value="single2812">单 XRotor 2812 900KV（6S / 9 s 上限）</option>
+                <option value="single2807">单 NIDICI 2807 1300KV（24 V 目录上限）</option>
+                <option value="single3115">单 XTO-3115 900KV（6S / 10 s）</option>
+                <option value="custom">自定义</option>
+              </select>
+            </label>
+            <p id="weaponMotorPresetNote" class="microcopy">请按具体电机型号、冷却条件、ESC 相电流与传动实测填写。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>武器起转方式</span>
+                <select data-param="weaponStartMode" id="weaponStartMode">
+                  <option value="realAcceleration">真实加速（从 0 rpm，默认）</option>
+                  <option value="setSpeed">设定初速（已预旋边界条件）</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>武器速度指令 <em>空载转速百分比</em></span>
+                <div class="input-wrap"><input data-param="weaponThrottle" type="number" step="1" min="0" max="100" /><b>%</b></div>
+              </label>
+            </div>
+            <p class="microcopy">“真实加速”从静止按功率推导的扭矩—转速包络加速；“设定初速”是理想预旋边界，会在 t=0 直接带入 ½Iω² 储能，不代表所填电机能在当前进场距离内达到它。两种模式命中后都会降速并由电机恢复。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>武器转动惯量</span>
+                <div class="input-wrap"><input data-param="weaponInertia" type="number" step="0.001" min="0.001" /><b>kg·mm²</b></div>
+              </label>
+              <label class="field">
+                <span>武器旋转组件质量 <em>实测 / 等效</em></span>
+                <div class="input-wrap"><input data-param="weaponMass" type="number" step="0.001" min="0.000001" /><b>kg</b></div>
+              </label>
+              <label class="field">
+                <span>武器电机 KV</span>
+                <div class="input-wrap"><input data-param="weaponKv" type="number" step="1" min="1" /><b>rpm/V</b></div>
+              </label>
+              <label class="field">
+                <span>电机数量</span>
+                <div class="input-wrap"><input data-param="weaponMotorCount" type="number" step="1" min="1" /><b>台</b></div>
+              </label>
+              <label class="field">
+                <span>电池电压</span>
+                <div class="input-wrap"><input data-param="voltage" type="number" step="0.1" min="0.1" /><b>V</b></div>
+              </label>
+              <label class="field">
+                <span>武器传动比 <em>电机÷武器</em></span>
+                <div class="input-wrap"><input data-param="weaponGearRatio" type="number" step="0.01" min="0.01" /><b>: 1</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>武器传动效率</span>
+                <div class="input-wrap"><input data-param="weaponEfficiency" type="number" step="1" min="1" max="100" /><b>%</b></div>
+              </label>
+              <label class="field">
+                <span>单电机电输入上限 Pe <em>不是机械轴功率</em></span>
+                <div class="input-wrap"><input data-param="weaponMotorPower" type="number" step="1" min="1" /><b>W</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>模型相电流上限 <em>0 = 未知；不可照搬电池电流</em></span>
+                <div class="input-wrap"><input data-param="weaponMotorCurrent" type="number" step="0.1" min="0" /><b>A</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>电机效率</span>
+                <div class="input-wrap"><input data-param="weaponMotorEfficiency" type="number" step="1" min="1" max="100" /><b>%</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>有效输出系数 <em>模型修正；非无人机 g/W 力效</em></span>
+                <div class="input-wrap"><input data-param="weaponOutputFactor" type="number" step="1" min="1" max="100" /><b>%</b></div>
+              </label>
+            </div>
+            <p id="weaponMassReadout" class="engineering-readout">旋转组件质量与转动惯量独立输入；求解器仅用 I ≤ mR² 检查自洽性，不会用 I/R² 自动补质量。</p>
+          </section>
+
+          <section class="settings-group" data-collapsible>
+            <div class="group-title-row"><h3>行驶系统</h3><span class="tag">条件 / 抓地</span></div>
+            <label class="field wide-field">
+              <span>行驶电机方案 <em>具体型号优先</em></span>
+              <select data-param="driveMotorPreset" id="driveMotorPreset">
+                <option value="dualBlitzLite1604Dyno4S">双 Blitz Lite 1604 2850KV + 29.16:1（4S 官方测功）</option>
+                <option value="repeatCompact1806Catalog">Repeat Compact 1806 2300KV + 22.6:1（官方目录，扭矩未知）</option>
+                <option value="dual1806">双 1806 3000KV + 20:1（用户候选，待核验）</option>
+                <option value="micro1103">双 1103（尺寸级示例，待实测）</option>
+                <option value="beetle1404">双 1404（尺寸级示例，待实测）</option>
+                <option value="heavy6374">四 6374（尺寸级示例，待实测）</option>
+                <option value="custom">自定义</option>
+              </select>
+            </label>
+            <p id="driveMotorPresetNote" class="microcopy">请优先填写实测/厂家数据表扭矩，再检查轮端牵引力是否被抓地上限限制。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>行驶起步方式</span>
+                <select data-param="driveStartMode" id="driveStartMode">
+                  <option value="realAcceleration">真实加速（从 0 起步）</option>
+                  <option value="setSpeed">设定初速（直接进入）</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>行驶速度指令 <em>空载速度百分比</em></span>
+                <div class="input-wrap"><input data-param="driveThrottle" type="number" step="1" min="0" max="100" /><b>%</b></div>
+              </label>
+            </div>
+            <p class="microcopy">“真实加速”由扭矩—转速包络、功率和抓地上限从静止积分；“设定初速”仅改变 t=0 速度，命中后的降速、反冲、牵引恢复和打滑仍由整体动力学模型计算。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>行驶电机 KV</span>
+                <div class="input-wrap"><input data-param="driveKv" type="number" step="1" min="1" /><b>rpm/V</b></div>
+              </label>
+              <label class="field">
+                <span>轮径</span>
+                <div class="input-wrap"><input data-param="wheelDiameter" type="number" step="1" min="1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>电机数量</span>
+                <div class="input-wrap"><input data-param="driveMotorCount" type="number" step="1" min="1" /><b>台</b></div>
+              </label>
+              <label class="field">
+                <span>单套峰值功率 <em>电输入/整套输出以预设注释为准</em></span>
+                <div class="input-wrap"><input data-param="driveMotorPower" type="number" step="1" min="1" /><b>W</b></div>
+              </label>
+              <label class="field">
+                <span>显式减速比前的单套等效堵转扭矩 <em>整套输出可按比值折算</em></span>
+                <div class="input-wrap"><input data-param="driveMotorTorque" type="number" step="0.000001" min="0.000001" /><b>N·m</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>单电机相电流上限 <em>0 = 未知，不限流</em></span>
+                <div class="input-wrap"><input data-param="driveMotorCurrent" type="number" step="0.1" min="0" /><b>A</b></div>
+              </label>
+              <label class="field">
+                <span>行驶传动比 <em>电机÷轮</em></span>
+                <div class="input-wrap"><input data-param="driveGearRatio" type="number" step="0.01" min="0.01" /><b>: 1</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>行驶传动 / 数据基准效率 <em>整套输出已含损耗时设 100%</em></span>
+                <div class="input-wrap"><input data-param="driveEfficiency" type="number" step="1" min="1" max="100" /><b>%</b></div>
+              </label>
+              <label class="field">
+                <span>机器人质量</span>
+                <div class="input-wrap"><input data-param="robotMass" type="number" step="0.1" min="0.1" /><b>kg</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>经验负载车速折扣 <em>不进入轮速滑移求解</em></span>
+                <div class="input-wrap"><input data-param="slipFactor" type="number" step="1" min="0" max="100" /><b>%</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>等效牵引上限 μeq <em>非 μs / μk 切换</em></span>
+                <div class="input-wrap"><input data-param="gripCoefficient" type="number" step="0.05" min="0.01" max="2" /><b>—</b></div>
+              </label>
+              <label class="field advanced-only">
+                <span>滚动阻力系数 Crr <em>轮胎 + 地面实测</em></span>
+                <div class="input-wrap"><input data-param="rollingResistanceCoefficient" type="number" step="0.005" min="0" max="0.5" /><b>—</b></div>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-group target-group" data-collapsible>
+            <div class="group-title-row"><h3>靶子规格</h3><span class="tag blue">X 长 · Y 厚 · Z 宽</span></div>
+            <label class="field wide-field">
+              <span>局部接触模型</span>
+              <select data-param="contactModel" id="contactModel">
+                <option value="material">有限材料安全模式（未验证接触会回滚停止，默认）</option>
+                <option value="rigid">理想刚体上限对照</option>
+              </select>
+            </label>
+            <div class="two-col">
+              <label class="field">
+                <span>材料预设</span>
+                <select data-param="targetMaterial" id="targetMaterial">
+                  <option value="mildSteel">低碳钢板</option>
+                  <option value="aluminum">铝合金板</option>
+                  <option value="hdpe">HDPE 板</option>
+                  <option value="wood">胶合木板</option>
+                  <option value="custom">自定义材料</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>质量采用方式</span>
+                <select data-param="targetMassMode" id="targetMassMode">
+                  <option value="geometry">按尺寸与密度自动计算（默认）</option>
+                  <option value="measured">实测 / 等效质量（手动）</option>
+                </select>
+              </label>
+            </div>
+            <div class="two-col target-dimensions">
+              <label class="field"><span>长度 X</span><div class="input-wrap"><input data-param="targetLength" type="number" step="1" min="1" /><b>mm</b></div></label>
+              <label class="field"><span>厚度 Y</span><div class="input-wrap"><input data-param="targetThickness" type="number" step="0.1" min="0.1" /><b>mm</b></div></label>
+              <label class="field"><span>宽度 Z <em>出平面方向</em></span><div class="input-wrap"><input data-param="targetWidthZ" type="number" step="0.1" min="0.1" /><b>mm</b></div></label>
+              <label class="field"><span>靶子质量 <em>自动模式实时回填；手动模式可称重输入</em></span><div class="input-wrap"><input data-param="targetMass" type="number" step="0.000001" min="0.0001" /><b>kg</b></div></label>
+            </div>
+            <p id="materialConsistencyReadout" class="engineering-readout">尺寸推算质量：— kg；实测质量：— kg。运动计算采用当前质量方式，差异会在此提示。</p>
+            <div class="two-col">
+              <label class="field">
+                <span>靶子场地 X <em>放置位置</em></span>
+                <div class="input-wrap"><input data-param="targetSceneX" type="number" step="1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>等效支撑间隙 <em>默认 0.1 mm</em></span>
+                <div class="input-wrap"><input data-param="targetClearance" type="number" step="0.01" min="0" /><b>mm</b></div>
+              </label>
+            </div>
+            <div class="two-col advanced-only">
+              <label class="field">
+                <span>武器—靶恢复系数 <em>仅刚体上限对照</em></span>
+                <div class="input-wrap"><input data-param="restitution" type="number" step="0.01" min="0" max="0.25" /><b>—</b></div>
+              </label>
+              <label class="field">
+                <span>靶材密度</span>
+                <div class="input-wrap"><input data-param="targetDensity" type="number" step="1" min="1" /><b>kg/m³</b></div>
+              </label>
+              <label class="field">
+                <span>靶材杨氏模量 <em>资料值，当前未参与求解</em></span>
+                <div class="input-wrap"><input data-param="targetYoungModulus" type="number" step="0.1" min="0.001" /><b>GPa</b></div>
+              </label>
+              <label class="field">
+                <span>靶材屈服强度</span>
+                <div class="input-wrap"><input data-param="targetYieldStrength" type="number" step="1" min="0.001" /><b>MPa</b></div>
+              </label>
+              <label class="field">
+                <span>靶材剪切强度</span>
+                <div class="input-wrap"><input data-param="targetShearStrength" type="number" step="1" min="0.001" /><b>MPa</b></div>
+              </label>
+              <label class="field">
+                <span>断裂能研究输入 Gc <em>当前不启用删料</em></span>
+                <div class="input-wrap"><input data-param="targetFractureEnergy" type="number" step="100" min="0" /><b>J/m²</b></div>
+              </label>
+              <label class="field wide-field">
+                <span>Gc 试验来源 <em>同牌号 / 状态 / 速率</em></span>
+                <div class="input-wrap"><input data-param="targetFractureSource" type="text" placeholder="例如：论文、材料试验或台架编号" /><b>来源</b></div>
+              </label>
+              <label class="field">
+                <span>最小切屑厚度研究输入 h_min <em>当前不启用删料</em></span>
+                <div class="input-wrap"><input data-param="targetMinChipThickness" type="number" step="0.01" min="0" /><b>mm</b></div>
+              </label>
+              <label class="field wide-field">
+                <span>h_min 试验来源 <em>同刀具 / 靶材 / 速度</em></span>
+                <div class="input-wrap"><input data-param="targetMinChipSource" type="text" placeholder="例如：台架试验编号与工况" /><b>来源</b></div>
+              </label>
+            </div>
+            <p class="microcopy">真实地面固定为场景 Y = 0 mm，叉子直接与该平面接触。等效支撑间隙只属于靶子：它把地面微凸点或靶子底面不完全贴合表示成持续支撑包络；默认靶子支撑平面为 Y = 0.1 mm，初始及再次落地后都保持该名义间隙。</p>
+          </section>
+
+          <section class="settings-group" data-collapsible>
+            <div class="group-title-row"><h3>材料与摩擦</h3><span class="tag teal">局部接触</span></div>
+            <p class="hint">Rapier 负责受限底盘、转轴武器、铰接叉子与靶子的整体运动。当前正式路径统一采用非穿透零删料边界；h_min 与 Gc 仅作为后续连续最早接触切削求解的研究输入，不会解锁未经验证的删料结果。</p>
+            <div class="three-col">
+              <label class="field">
+                <span>武器材质</span>
+                <select data-param="weaponMaterial" id="weaponMaterial">
+                  <option value="hardox500">Hardox 500</option>
+                  <option value="hardox600">Hardox 600</option>
+                  <option value="peek">PEEK</option>
+                  <option value="plaPlus">PLA+</option>
+                  <option value="tc4">TC4 钛合金</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>叉子材质</span>
+                <select data-param="shovelMaterial" id="shovelMaterial">
+                  <option value="hardox500">Hardox 500</option>
+                  <option value="hardox600">Hardox 600</option>
+                  <option value="peek">PEEK</option>
+                  <option value="plaPlus">PLA+</option>
+                  <option value="tc4">TC4 钛合金</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>地板材质</span>
+                <select data-param="floorMaterial" id="floorMaterial">
+                  <option value="osb">欧松板（OSB）</option>
+                  <option value="steelPlate">钢板</option>
+                  <option value="aluminumPlate">铝板</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </label>
+            </div>
+            <div class="two-col material-meta">
+              <div class="field static-field">
+                <span>场地地面 Y <em>固定全局基准</em></span>
+                <div class="input-wrap static-value"><output>0</output><b>mm</b></div>
+              </div>
+              <label class="field advanced-only">
+                <span>摩擦修正系数 <em>材料对 × 修正</em></span>
+                <div class="input-wrap"><input data-param="frictionFactor" type="number" step="0.05" min="0.25" max="2" /><b>×</b></div>
+              </label>
+            </div>
+            <div class="two-col advanced-only material-contact-grid">
+              <label class="field">
+                <span>武器宽度 Z</span>
+                <div class="input-wrap"><input data-param="weaponWidthZ" type="number" step="0.1" min="0.1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>叉子宽度 Z</span>
+                <div class="input-wrap"><input data-param="shovelWidthZ" type="number" step="0.1" min="0.1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>武器 Z 偏移 <em>相对靶子中面</em></span>
+                <div class="input-wrap"><input data-param="weaponZOffset" type="number" step="0.1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>叉子 Z 偏移 <em>相对靶子中面</em></span>
+                <div class="input-wrap"><input data-param="shovelZOffset" type="number" step="0.1" /><b>mm</b></div>
+              </label>
+              <label class="field">
+                <span>刀刃等效圆角半径</span>
+                <div class="input-wrap"><input data-param="edgeRadius" type="number" step="0.05" min="0.01" /><b>mm</b></div>
+              </label>
+            </div>
+            <p id="materialReadout" class="microcopy">正在根据所选材料对与已填修正系数计算摩擦；面板收起不改变求解值。</p>
+            <p id="materialModelReadout" class="engineering-readout">局部材料模型：等待参数。默认武器宽 8 mm、叉子宽 4 mm、两者 Z 偏移 0 mm、刀刃圆角 0.2 mm；“高级”中可修改。</p>
+          </section>
+
+          <section class="settings-group assumptions-card" data-collapsible>
+            <div class="group-title-row">
+              <div class="assumption-title"><div class="small-icon" aria-hidden="true">i</div><h3>当前模型与适用边界</h3></div>
+              <span class="tag">说明</span>
+            </div>
+              <p><strong>当前模型：</strong>Rapier 2D 求解靶子、转子、铰接叉子与仅有水平自由度的底盘；底盘竖向和俯仰由理想地面约束。有限材料安全模式不会把未验证的完全刚体冲量当成剐蹭结果：若当前刀齿缺少已验证的连续塑性/断裂、沟槽历史与最早接触 TOI，首次承载接触会回滚到安全帧并停止。“理想刚体”仅作显式上限对照，不是有限元或断裂仿真。</p>
+          </section>
+        </aside>
+
+        <section class="scene-panel" aria-label="侧视二维仿真画布">
+          <div class="scene-toolbar">
+            <div class="scene-title"><div class="eyebrow">SIDE VIEW / 2D</div><h2>啮入过程</h2></div>
+            <div class="scene-tools">
+              <button id="toggleGrid" class="icon-button active" type="button" title="显示/隐藏网格">#</button>
+              <button id="zoomOut" class="icon-button" type="button" title="缩小画面">−</button>
+              <button id="fitScene" class="icon-button" type="button" title="适配场景">⌗</button>
+              <button id="zoomIn" class="icon-button" type="button" title="放大画面">＋</button>
+              <button id="toggleEnvelope" class="icon-button active" type="button" title="显示/隐藏旋转包络">◎</button>
+            </div>
+          </div>
+          <div class="canvas-wrap" id="canvasWrap">
+              <canvas id="simCanvas" aria-label="武器、叉子与靶子的二维仿真"></canvas>
+            <div id="phaseBadge" class="phase-badge approach">接近中</div>
+            <div class="canvas-legend">
+              <span><i class="legend-dot origin"></i>武器原点</span>
+              <span><i class="legend-dot weapon"></i>旋转武器</span>
+              <span><i class="legend-dot target"></i>靶子</span>
+              <span><i class="legend-dot contact"></i>接触 / bite</span>
+            </div>
+            <div id="cursorReadout" class="cursor-readout">场景坐标：X — mm · Y — mm</div>
+            <div id="axisHint" class="axis-hint hidden">在武器轮廓上点击，设置新的旋转轴</div>
+          </div>
+          <div class="scene-caption">
+            <span id="fileSummary">当前：内置武器与厚叉子 DXF</span>
+            <span id="zoomReadout">缩放 1.00×</span>
+            <span>滚轮缩放；中键或 Shift+拖动平移；双击 / F 适配。场景 (0,0) mm 独立；叉子铰点只参考武器局部原点。</span>
+          </div>
+        </section>
+
+        <aside class="sidebar results-panel" aria-label="计算结果">
+          <div class="side-heading">
+            <div><div class="eyebrow">READOUT</div><h2>计算结果</h2></div>
+            <span id="simTime" class="time-readout">t = 0.000 s</span>
+          </div>
+
+          <section class="result-section ideal-section">
+            <div class="result-heading"><span class="result-chip ideal">几何 / 理想值</span><span class="formula-note">无负载、恒速</span></div>
+            <div class="metric-grid">
+              <article class="metric-card accent-orange"><span>武器转速</span><strong id="weaponRpm">—</strong><small>rpm</small></article>
+              <article class="metric-card accent-orange"><span>角速度</span><strong id="angularVelocity">—</strong><small>rad/s</small></article>
+              <article class="metric-card accent-orange"><span>刀尖线速度</span><strong id="tipSpeed">—</strong><small>m/s</small></article>
+              <article class="metric-card accent-teal"><span>空载理论车速</span><strong id="vehicleSpeed">—</strong><small>m/s</small></article>
+              <article class="metric-card accent-teal"><span>理论满速每齿进给</span><strong id="biteTheoretical">—</strong><small>mm / 齿</small></article>
+              <article class="metric-card accent-teal"><span>当前 X 向相对进给 / 齿</span><strong id="biteIdeal">—</strong><small>mm / 齿 · 运动学</small></article>
+              <article class="metric-card accent-violet"><span>旋转动能</span><strong id="weaponEnergy">—</strong><small>J</small></article>
+              <article class="metric-card accent-orange"><span>相电流限矩上限</span><strong id="weaponShaftTorque">—</strong><small>N·m</small></article>
+              <article class="metric-card accent-orange"><span>有效武器功率</span><strong id="weaponPowerOut">—</strong><small>W</small></article>
+              <article class="metric-card accent-teal"><span>可用轮端牵引</span><strong id="driveTraction">—</strong><small>N</small></article>
+              <article class="metric-card accent-teal"><span>有效行驶功率</span><strong id="drivePowerOut">—</strong><small>W</small></article>
+              <article class="metric-card accent-orange"><span>实时武器转速</span><strong id="liveWeaponRpm">—</strong><small>rpm</small></article>
+              <article class="metric-card accent-teal"><span>实时行驶速度</span><strong id="liveDriveSpeed">—</strong><small>m/s</small></article>
+            </div>
+            <p class="result-footnote">“X 向每齿进给”= 底盘与靶子的水平相对进给 ÷ 实时齿通过频率；接触时采用靶子接触点瞬时速度（含自转），未接触时采用靶子质心速度。旋转切入的实际未切削厚度单独显示，二者不能互相替代。</p>
+          </section>
+
+          <section class="result-section collision-section">
+            <div class="result-heading"><span class="result-chip collision">靶子自由运动 + 底盘水平反冲 + 局部接触</span><span id="collisionState" class="formula-note">等待接触</span></div>
+            <div class="impact-readout" id="impactReadout">
+              <div class="impact-dot"></div>
+              <div><span>当前状态</span><strong id="impactSummary">尚未发生武器接触</strong></div>
+            </div>
+            <div class="metric-grid compact">
+              <article class="metric-card accent-red"><span>接触点</span><strong id="contactPoint">—</strong><small>mm</small></article>
+              <article class="metric-card accent-red"><span>命中时 X 向进给 bite</span><strong id="penetrationDepth">—</strong><small>mm / 齿</small></article>
+              <article class="metric-card accent-red"><span>相对法向速度</span><strong id="relativeSpeed">—</strong><small>m/s</small></article>
+              <article class="metric-card accent-red"><span>靶动能增量</span><strong id="impactEnergy">—</strong><small>J</small></article>
+              <article class="metric-card accent-red"><span>接触冲量</span><strong id="impactImpulse">—</strong><small>N·s</small></article>
+              <article class="metric-card accent-red"><span>最大真实几何侵入</span><strong id="geometryPenetration">—</strong><small>mm</small></article>
+              <article class="metric-card accent-red"><span>接触求解提前量</span><strong id="contactGap">—</strong><small>mm · 上限 0.08</small></article>
+              <article class="metric-card accent-red"><span>转子动能损失</span><strong id="rotorEnergyLoss">—</strong><small>J</small></article>
+              <article class="metric-card accent-red"><span>未归类能量残差</span><strong id="energyResidual">—</strong><small>J</small></article>
+              <article class="metric-card accent-violet"><span>约束 / 滚阻能量交换</span><strong id="constraintEnergy">—</strong><small>J · 正值为耗散</small></article>
+              <article class="metric-card accent-violet"><span>材料删除能量（正式路径固定为 0）</span><strong id="chipEnergy">—</strong><small>J</small></article>
+              <article class="metric-card accent-violet text-metric"><span>能量账收敛性</span><strong id="energyValidity">—</strong><small>数值验证</small></article>
+              <article class="metric-card accent-red"><span>牙齿命中次数</span><strong id="hitCount">0</strong><small>次</small></article>
+              <article class="metric-card accent-red"><span>刀体 / 背板碰撞次数</span><strong id="bodyImpactCount">0</strong><small>次</small></article>
+              <article class="metric-card accent-red"><span>靶子质心实时 X</span><strong id="targetPositionX">—</strong><small>mm · 场景坐标</small></article>
+              <article class="metric-card accent-red"><span>靶子质心实时 Y</span><strong id="targetPositionY">—</strong><small>mm · 场景坐标</small></article>
+              <article class="metric-card accent-red"><span>靶子实时速度</span><strong id="targetFlightSpeed">—</strong><small>m/s</small></article>
+              <article class="metric-card accent-red"><span>靶子转速</span><strong id="targetSpin">—</strong><small>rad/s</small></article>
+              <article class="metric-card accent-violet"><span>有效接触宽度 Z</span><strong id="effectiveWidthZ">—</strong><small>mm</small></article>
+              <article class="metric-card accent-violet"><span>候选未切削厚度（研究量）</span><strong id="uncutThickness">—</strong><small>mm</small></article>
+              <article class="metric-card accent-violet"><span>接触 / 塑性阻力（非真实切削量）</span><strong id="cuttingForce">—</strong><small>N</small></article>
+              <article class="metric-card accent-violet"><span>材料塑性功（非真实切削功）</span><strong id="materialWork">—</strong><small>J</small></article>
+              <article class="metric-card accent-violet"><span>非切削边界耗散</span><strong id="boundaryWork">—</strong><small>J</small></article>
+              <article class="metric-card accent-violet text-metric"><span>材料模型有效性</span><strong id="materialValidity">—</strong><small>边界检查</small></article>
+              <article class="metric-card accent-red"><span>刀—靶摩擦 μk</span><strong id="contactFriction">—</strong><small>材料对</small></article>
+              <article class="metric-card accent-red"><span>叉—靶摩擦 μk</span><strong id="shovelFriction">—</strong><small>材料对</small></article>
+              <article class="metric-card accent-red"><span>靶—地摩擦</span><strong id="floorFriction">—</strong><small>μs 参考 / 当前求解 μk</small></article>
+              <article class="metric-card accent-red"><span>地板恢复系数</span><strong id="floorRestitution">—</strong><small>e</small></article>
+              <article class="metric-card accent-red"><span>牵引需求超限比例</span><strong id="driveSlip">—</strong><small>% · 非轮速滑移率</small></article>
+            </div>
+              <div class="model-equation">Rapier 联立求解靶子自由运动、转轴武器、绕自身原点自由转动的铰接叉子、无限地面与底盘水平反冲；底盘竖向和俯仰仍是理想约束。叉子铰点位置固定在底盘上，当前没有隐藏的铰链限位、弹簧或阻尼。导入 CAD 与测试齿都不能在“有限材料”模式下静默退回完全刚体：未完成连续最早接触、有限塑性/断裂及变形后表面验证时，首次承载接触会整步回滚并标记材料模型域停止。X 向每齿进给是运动学量，不能直接替代材料切深，也不会用 1/N 人工缩放冲量。“理想刚体”仅为上限对照。</div>
+          </section>
+
+          <section class="event-section">
+            <div class="group-title-row"><h3>事件记录</h3><button id="clearEvents" class="text-button" type="button">清除</button></div>
+            <ol id="eventLog" class="event-log"><li><time>0.000 s</time><span>载入默认示例；可直接播放。</span></li></ol>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="transport" aria-label="仿真播放控制">
+        <div class="transport-main">
+          <button id="resetSimulation" class="button ghost" type="button">↺ 重置</button>
+          <button id="playPause" class="button primary play-button" type="button"><span class="play-symbol">▶</span><span>播放</span></button>
+          <button id="stepSimulation" class="button secondary" type="button">▸ 单步 <small>+0.5 ms</small></button>
+        </div>
+        <div class="timeline-wrap">
+          <div class="timeline-header"><span>仿真进度</span><output id="timelineReadout" for="timelineSeek">0.0000 / 4.0000 s</output></div>
+          <div class="timeline timeline-interactive">
+            <div id="timelineProgress" class="timeline-progress"></div><i class="event-tick shovel-tick"></i><i class="event-tick weapon-tick"></i>
+            <input id="timelineSeek" class="timeline-seek" type="range" min="0" max="4000" step="0.5" value="0" aria-label="拖动定位当前设定时长内的仿真时间">
+          </div>
+          <div class="timeline-labels"><span>0 s</span><span>可拖动定位</span><span id="timelineEndLabel">4.0000 s</span></div>
+        </div>
+        <div class="transport-meta">
+          <label class="speed-select">计算到 <span class="input-wrap compact-input"><input data-param="simulationDuration" type="number" value="4" min="0.0005" max="4" step="0.0005" inputmode="decimal" /><b>s</b></span></label>
+          <label class="speed-select">时间倍率 <select id="timeScale" data-param="timeScale"><option value="0.01">0.01×</option><option value="0.025">0.025×</option><option value="0.05">0.05×</option><option value="0.1">0.1×</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="16">16×</option></select></label>
+          <span id="stepReadout">固定步长 0.5 ms</span>
+          <span class="shortcut-help">空格 播放/暂停 · → 单步 · R 重置</span>
+        </div>
+      </footer>
+    </div>
+
+    <div id="modalBackdrop" class="modal-backdrop hidden" role="presentation">
+      <section id="dwgModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dwgModalTitle">
+        <button class="modal-close" data-close-modal type="button" aria-label="关闭">×</button>
+        <div class="modal-kicker">DWG / DXF 适配边界</div>
+        <h2 id="dwgModalTitle">浏览器端不会直接解析 DWG</h2>
+          <p>本页面可直接内置或导入 ASCII DXF 的 LINE、无 bulge 的 LWPOLYLINE / POLYLINE、CIRCLE 与 ARC。bulge、SPLINE、ELLIPSE、INSERT 等当前不能无损解析的几何会明确拒绝，不会静默改成直线。DWG 是二进制专有格式，当前页面不会把它标成“已导入”。</p>
+        <ol>
+          <li>在 CAD 中另存或导出为 ASCII DXF（建议 R12 / 2000 兼容）。</li>
+          <li>分别导入铲子与武器轮廓，并在画布中点选武器转轴。</li>
+          <li>生产环境可接入 ODA / Teigha 或服务端转换服务；建议约定类似 <code>convert(file, context)</code> 的异步转换接口。</li>
+        </ol>
+        <p class="modal-callout">如果已选择 DWG，请转换后重新导入 DXF；转换服务接入前不会产生任何假结果。</p>
+        <button class="button primary" data-close-modal type="button">明白了</button>
+      </section>
+
+      <section id="notesModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="notesModalTitle">
+        <button class="modal-close" data-close-modal type="button" aria-label="关闭">×</button>
+        <div class="modal-kicker">MVP MODEL</div>
+        <h2 id="notesModalTitle">读数如何使用</h2>
+        <dl class="notes-list">
+          <div><dt>几何 / 理想值</dt><dd>由 KV、电压、传动比、轮径和转动惯量计算无负载上限。每齿 bite（mm/齿）= 接触点相对 X 向进给速度 ÷ 每秒实际齿通过次数；它不是材料切深。</dd></div>
+          <div><dt>CAD 与测试几何</dt><dd>叉子和武器各自独立选择当前 DXF 或“测试叉面 / 测试齿形”，因此共有四种组合。测试开关不删除已导入图纸，关闭即恢复；测试齿用“齿尖半径 + 直线迎击面 + 三角背撑”定义有限实体，测试叉严格是一条理想无厚度线段。叉子质量显式输入，测试线叉的质心与惯量按均匀细杆计算。</dd></div>
+          <div><dt>靶子轴向</dt><dd>靶子长度沿 X，厚度沿 Y。等效支撑间隙只定义靶子的持续支撑包络；叉子接触的真实地面仍固定为 Y = 0 mm。</dd></div>
+          <div><dt>整体运动</dt><dd>凹形 DXF 使用真实闭合边界，不用凸包填平牙谷；铰接叉子、转轴武器、靶子与无限地面由 Rapier 2D 自适应子步联立求解。叉子 X/Y 只定位铰点，叉身在重力与接触下自由转动；当前没有隐藏铰链限位或阻尼。底盘只有水平自由度，竖向与俯仰由理想地面约束，不能据此判断整机起跳或载荷转移。</dd></div>
+          <div><dt>局部材料接触</dt><dd>导入 CAD 与测试齿当前均采用非穿透零删料边界；h_min / Gc 可以记录，但连续“最早压缩接触 → 材料删除 → 余步重演”尚未通过收敛验证，因此安全门不会输出切削量或切屑体积。测试齿的直线迎击面、牙长和背撑会参与真实刚体几何接触，但不被冒充为已验证的材料去除模型。</dd></div>
+          <div><dt>收敛与回放</dt><dd>未来若启用连续材料删除，必须在同一固定时间步用相邻两档子步重复求解，删料、材料功、接触身份和终态任一不收敛都要回滚并停止；当前正式路径不会尝试删料。播放前先生成固定步长轨迹，播放、单步和进度条只读取已完成帧。</dd></div>
+        </dl>
+          <p class="microcopy">武器与行驶均按所选“真实加速 / 设定初速”模式起步。“高级参数（仅显示）”只展开或收起输入，不重置时间，也不切换求解律：已填的效率、有效输出系数、折扣、抓地、相电流限值、摩擦修正、恢复系数和刚体上限能量系数始终参与同一物理模型。0 A 表示没有可核验的相电流上限，不施加人为电流限矩；厂家桨测的电池侧电流不会被当作相电流。</p>
+        <p class="microcopy">武器碰撞使用已解析 DXF 的最大闭合外轮廓；孔、内圆与未闭合构造线不参与实体碰撞。若未来材料去除通过连续接触与收敛验证并被启用，只能归因于图纸识别出的真实迎击牙瓣；当前零删料路径不会删除材料。预测距离只作接近查询，正间隙不施力、不计命中或 bite。</p>
+        <p class="microcopy">局部材料模型是二维工程估算，不追踪裂纹扩展、刀刃磨损、温升、三维弯曲或应变率完整本构；材料功也不能直接解读为最终裂纹长度、真实损伤或赛场安全结论。刚体上限尤其不应作为真实击飞预测。</p>
+        <button class="button primary" data-close-modal type="button">继续调参</button>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="assets/default-models.js"></script>
+    <script src="assets/polygon-clipping/polygon-clipping-0.15.7.umd.min.js"></script>
+    <script src="assets/earcut/earcut-3.2.3.min.js"></script>
+    <script src="assets/rapier/rapier-loader-0.20.0.global.js"></script>
+    <script src="app.js?v=1.0.0"></script>
+  </body>
+</html>
