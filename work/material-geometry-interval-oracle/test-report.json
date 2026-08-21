@@ -1,0 +1,279 @@
+{
+  "stage": "S4b-1A-pure-translation-sweep-geometry-kernel",
+  "startedAt": "2026-08-13T17:27:04.753Z",
+  "completedAt": "2026-08-13T17:27:05.991Z",
+  "pass": true,
+  "passed": 14,
+  "total": 14,
+  "scope": {
+    "proven": "pure fixed-orientation segment + affine translation + authoritative MultiPolygon numerical enclosure",
+    "excluded": [
+      "Sfree/path/owner/witness/body provenance",
+      "finite rotation",
+      "structural active-mode transition",
+      "production removal authority",
+      "parameter-tooth fracture/removal definition"
+    ]
+  },
+  "sourceSha256": "80D17447A64DE189581488EC32300DF2232A732140EC768385FC3171C7695C3C",
+  "runnerSha256": "F4BF8E90A9734E0EDAEB2889967BCD6001531F09478476CD1BC9ABA25C7713B0",
+  "observations": [
+    {
+      "name": "outer polygon exact sweep and dense conservative interval",
+      "pass": true,
+      "observation": {
+        "area": 0.32000000000000006,
+        "sampleGuard": 2.656736342121612e-8,
+        "bound": {
+          "ok": true,
+          "status": "pure-certified-interval",
+          "certificateType": "pure-convex-translation-steiner-plus-numeric-enclosure-v1",
+          "pLo": 0,
+          "pHi": 0.8,
+          "areaLower": 0,
+          "areaUpper": 3.8853096757160976,
+          "minArea": 0,
+          "maxArea": 3.8853096757160976,
+          "geometrySnapshotDigest": "D647F17812523240878BBDC71C2A9006598A71E4C2E39782CC94753703DB2E9F",
+          "pathDigest": "ED49D556EEEA259FCD2CA087F7BFE09DEFAF0E9A2C08D905F245D097E680C73F",
+          "proof": {
+            "schema": "pure-convex-translation-steiner-enclosure-v1",
+            "midpointSampleDigest": "7A2E5E86549E97701DBDB65B56825DE410AF76B41625E51FCC3FB32DE9BF5DCA",
+            "endpointSampleDigests": [
+              "CEA7039E24C5E6AD010EDBDFFB02B9C809AAC064465B9AA3DD704C87CC2C6826",
+              "D948C350F4F021FD4195E054ECF159A020188171A99F56694CAEB397F3970BB7"
+            ],
+            "faceLength": 0.8,
+            "halfWidth": 0.4,
+            "hausdorffRadius": 0.4,
+            "perimeterUpper": 3.2,
+            "geometricAreaVariation": 3.5653096491487344,
+            "midpointNumericalAreaGuard": 2.656736342121612e-8,
+            "endpointNumericalAreaGuards": [
+              2.1610730982857748e-8,
+              2.818262601156484e-8
+            ],
+            "geometryAreaGuard": 2.1610730982857748e-8,
+            "setIdentity": "S(p)=workingSegment Minkowski [0,d(p)]",
+            "contraction": "(G intersection A) triangle (G intersection B) subset A triangle B"
+          },
+          "authority": "none-pure-mathematical-input",
+          "intervalDigest": "AACD52FEE62F03F999A3DEFB479232932D29911D10957FE187E2D91B995E5FCF"
+        }
+      }
+    },
+    {
+      "name": "holes and disconnected components remain authoritative",
+      "pass": true,
+      "observation": {
+        "area": 0.4,
+        "bound": {
+          "ok": true,
+          "status": "pure-certified-interval",
+          "certificateType": "pure-convex-translation-steiner-plus-numeric-enclosure-v1",
+          "pLo": 0.05,
+          "pHi": 0.75,
+          "areaLower": 0,
+          "areaUpper": 3.25969026828851,
+          "minArea": 0,
+          "maxArea": 3.25969026828851,
+          "geometrySnapshotDigest": "ACA0F15931F2DD29CB8A625DFC41D719A5D00A67AC3A390906521551A0CEB86A",
+          "pathDigest": "ED49D556EEEA259FCD2CA087F7BFE09DEFAF0E9A2C08D905F245D097E680C73F",
+          "proof": {
+            "schema": "pure-convex-translation-steiner-enclosure-v1",
+            "midpointSampleDigest": "8293F6867C8F443B7AA226C8BCC184B30D64B1556D8B75E4911AA67B11FF1676",
+            "endpointSampleDigests": [
+              "D1996BEC44D8989749DF5A8CA2E6F48618662C39673690ADBF35031D3787BA9F",
+              "DFC8F95B545D6A47A28AF3EFF5C28EC6F10C312EE2FEC7B186B60A100829D6D8"
+            ],
+            "faceLength": 0.8,
+            "halfWidth": 0.35,
+            "hausdorffRadius": 0.35,
+            "perimeterUpper": 3.1,
+            "geometricAreaVariation": 2.9396902001294993,
+            "midpointNumericalAreaGuard": 6.815901088705184e-8,
+            "endpointNumericalAreaGuards": [
+              6.514130746656926e-8,
+              7.117671430753442e-8
+            ],
+            "geometryAreaGuard": 5.770175449047169e-8,
+            "setIdentity": "S(p)=workingSegment Minkowski [0,d(p)]",
+            "contraction": "(G intersection A) triangle (G intersection B) subset A triangle B"
+          },
+          "authority": "none-pure-mathematical-input",
+          "intervalDigest": "D9D9B59AEBAACB2D5AB17C03CFCC005935E115D24168BD03A5355F0A821E1E4A"
+        }
+      }
+    },
+    {
+      "name": "re-entry uses only current remaining material",
+      "pass": true,
+      "observation": {
+        "repeatedArea": 0,
+        "laterArea": 0.15999999999999992
+      }
+    },
+    {
+      "name": "empty geometry is exactly zero",
+      "pass": true,
+      "observation": {
+        "sample": {
+          "ok": true,
+          "status": "zero-fresh-area",
+          "p": 0.5,
+          "area": 0,
+          "freshArea": 0,
+          "areaLower": 0,
+          "areaUpper": 0,
+          "numericalAreaGuard": 0,
+          "payload": {
+            "schema": "pure-translation-sweep-payload-v1",
+            "p": 0.5,
+            "displacement": {
+              "x": 0.5,
+              "y": 0
+            },
+            "startSegment": {
+              "start": {
+                "x": 0,
+                "y": -0.4
+              },
+              "end": {
+                "x": 0,
+                "y": 0.4
+              }
+            },
+            "endSegment": {
+              "start": {
+                "x": 0,
+                "y": -0.4
+              },
+              "end": {
+                "x": 0,
+                "y": 0.4
+              }
+            },
+            "sweepGeometry": [],
+            "freshGeometry": [],
+            "desiredGeometry": [],
+            "currentArea": 0,
+            "remainingAfterArea": 0,
+            "intersectionArea": 0,
+            "differenceArea": 0,
+            "geometrySnapshotDigest": "EBF9ADF84C60EFD5C6357B7FBCCD62539250614A58480BCD3E55D6D5F3FCD247",
+            "pathDigest": "ED49D556EEEA259FCD2CA087F7BFE09DEFAF0E9A2C08D905F245D097E680C73F"
+          },
+          "sampleDigest": "110ED2165FCBF9D02200F129583F9188C441BD6CFC9905A02BFED717A49E8F7A"
+        },
+        "bound": {
+          "ok": true,
+          "status": "certified-empty-interval",
+          "pLo": 0.1,
+          "pHi": 0.7,
+          "areaLower": 0,
+          "areaUpper": 0,
+          "minArea": 0,
+          "maxArea": 0,
+          "geometrySnapshotDigest": "EBF9ADF84C60EFD5C6357B7FBCCD62539250614A58480BCD3E55D6D5F3FCD247",
+          "pathDigest": "ED49D556EEEA259FCD2CA087F7BFE09DEFAF0E9A2C08D905F245D097E680C73F",
+          "authority": "none-pure-mathematical-input"
+        }
+      }
+    },
+    {
+      "name": "finite or p-dependent rotation is refused",
+      "pass": true,
+      "observation": {
+        "refused": 3
+      }
+    },
+    {
+      "name": "missing or malformed angular provenance is refused fail-closed",
+      "pass": true,
+      "observation": {
+        "refused": 7
+      }
+    },
+    {
+      "name": "zero working segment and unresolved geometry stop",
+      "pass": true,
+      "observation": {
+        "zeroReason": "working segment is numerically unresolved",
+        "unresolvedReason": "geometry normalization area guard exceeds the scale-independent relative-area cap"
+      }
+    },
+    {
+      "name": "collinear disjoint boundaries retain a resolved thin ligament",
+      "pass": true,
+      "observation": {
+        "minimumFeature": 0.009999999999999787,
+        "lengthGuard": 5.184119800105691e-11
+      }
+    },
+    {
+      "name": "published interval strictly contains endpoint values and enclosures",
+      "pass": true,
+      "observation": {
+        "interval": [
+          0,
+          1.8509838770526985
+        ],
+        "endpointGuards": [
+          2.565070190119323e-8,
+          2.741941443762507e-8
+        ]
+      }
+    },
+    {
+      "name": "seeded random intervals contain every dense exact enclosure",
+      "pass": true,
+      "observation": {
+        "intervals": 80,
+        "probes": 5200,
+        "finalSeed": 213961470
+      }
+    },
+    {
+      "name": "large-coordinate caller tolerance cannot create a dimensionally wrong loose area gate",
+      "pass": true,
+      "observation": {
+        "safeGuard": 3130.2306524950072,
+        "relativeGuard": 7.825576631237518e-10,
+        "looseReason": "geometry normalization area guard exceeds the scale-independent relative-area cap"
+      }
+    },
+    {
+      "name": "parallel and oblique translation use the same exact convex sweep identity",
+      "pass": true,
+      "observation": {
+        "parallelArea": 0,
+        "obliqueArea": 0.32000000000000006
+      }
+    },
+    {
+      "name": "invalid intervals, nonfinite values, and self-crossing inputs stop safely",
+      "pass": true,
+      "observation": {
+        "refused": 5,
+        "selfCrossingReason": "remainingGeometry ring 0/0 has zero signed area"
+      }
+    },
+    {
+      "name": "module exposes no authority or trust-signing API",
+      "pass": true,
+      "observation": {
+        "forbidden": [
+          "trustedWorkingWitnessProviderSha256",
+          "frozenWorkingWitness",
+          "sFreeBinding",
+          "contactFrameSignature",
+          "materialRowSignature",
+          "kinematics",
+          "solverInput",
+          "_signing"
+        ],
+        "authority": "none; digests are integrity checks, never authentication"
+      }
+    }
+  ]
+}

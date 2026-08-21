@@ -1,0 +1,28 @@
+{
+  "schema": "exact-mode-family-rotation-random-audit-v1",
+  "pass": true,
+  "configurations": 24,
+  "intervals": 288,
+  "attemptedSamples": 7200,
+  "exactSamples": 7200,
+  "topologyCertified": 24,
+  "fullRange": 264,
+  "safeStops": 0,
+  "maximumRelativeWidth": 1,
+  "topologyReasons": {
+    "non-adjacent cells 1/3 may overlap inside the p interval": 45,
+    "non-adjacent cells 0/2 may overlap inside the p interval": 77,
+    "non-adjacent cells 3/5 may overlap inside the p interval": 29,
+    "non-adjacent cells 5/7 may overlap inside the p interval": 19,
+    "non-adjacent cells 2/4 may overlap inside the p interval": 28,
+    "non-adjacent cells 6/8 may overlap inside the p interval": 12,
+    "non-adjacent cells 8/10 may overlap inside the p interval": 7,
+    "non-adjacent cells 4/6 may overlap inside the p interval": 18,
+    "non-adjacent cells 10/12 may overlap inside the p interval": 8,
+    "non-adjacent cells 9/11 may overlap inside the p interval": 7,
+    "non-adjacent cells 13/15 may overlap inside the p interval": 3,
+    "non-adjacent cells 11/13 may overlap inside the p interval": 1,
+    "non-adjacent cells 7/9 may overlap inside the p interval": 9,
+    "non-adjacent cells 12/14 may overlap inside the p interval": 1
+  }
+}

@@ -1,0 +1,200 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Real Sfree private 78F parameter-tooth checkpoint</title>
+<iframe id="candidate" style="position:fixed;left:-9000px;width:1500px;height:1000px;border:0"></iframe>
+<pre id="out">waiting</pre>
+<script>
+(() => {
+  'use strict';
+  const frame = document.getElementById('candidate');
+  const out = document.getElementById('out');
+  const wait = async (predicate, timeout = 90000) => {
+    const started = performance.now();
+    while (performance.now() - started < timeout) {
+      const value = predicate();
+      if (value) return value;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    throw new Error('private 78F checkpoint hook timeout');
+  };
+  const rejects = async (operation) => {
+    try { await operation(); return false; } catch (_) { return true; }
+  };
+  frame.addEventListener('load', async () => {
+    try {
+      const required = [
+        '__qaGeometryPathAuthorityDescribe', '__qaGeometryPathAuthorityRun',
+        '__qaGeometryPathAuthorityAttack', '__qaGeometryPathAuthorityFault',
+        '__qaGeometryPathAuthorityWitness',
+      ];
+      const api = await wait(() => {
+        const candidate = frame.contentWindow.BiteSim;
+        return candidate && required.every((name) => typeof candidate[name] === 'function')
+          ? candidate : null;
+      });
+      const missing = required.filter((name) => typeof api[name] !== 'function');
+      api.setParams({
+        paramWeaponEnabled: true,
+        paramToothCount: 1,
+        paramToothLength: 55,
+        paramToothWorkLength: 14,
+        paramToothWidth: 6,
+        paramToothPhaseDeg: 0,
+        weaponMirrorX: false,
+        weaponMirrorY: false,
+      });
+      const description = api.__qaGeometryPathAuthorityDescribe();
+      const runId = description.runScenarioIds[0];
+      const run = api.__qaGeometryPathAuthorityRun(runId);
+      const witnessCases = description.witnessCaseIds.map(
+        (id) => api.__qaGeometryPathAuthorityWitness(id),
+      );
+      const byWitnessId = Object.fromEntries(witnessCases.map((entry) => [entry.id, entry]));
+      const attacks = description.attackIds.map((id) => api.__qaGeometryPathAuthorityAttack(id));
+      const faults = description.faultIds.map((id) => api.__qaGeometryPathAuthorityFault(id));
+      const later = frame.contentDocument.createElement('script');
+      later.textContent = `(() => {
+        let moduleType = null; let moduleReferenceError = false;
+        let tableType = null; let tableReferenceError = false;
+        try { moduleType = typeof s4cToiModule; } catch (_) { moduleType = 'threw'; }
+        try { void s4cToiModule; } catch (error) { moduleReferenceError = error instanceof ReferenceError; }
+        try { tableType = typeof __modules; } catch (_) { tableType = 'threw'; }
+        try { void __modules; } catch (error) { tableReferenceError = error instanceof ReferenceError; }
+        window.__qaPrivateToiLexical = { moduleType, moduleReferenceError, tableType, tableReferenceError };
+      })();`;
+      frame.contentDocument.documentElement.appendChild(later);
+      const lexical = { ...frame.contentWindow.__qaPrivateToiLexical };
+      delete frame.contentWindow.__qaPrivateToiLexical;
+      later.remove();
+      const forbidden = [
+        'createGeometryPathAuthority', 'createTrustedCompositionInstaller',
+        'createGeometryAuthorityInstallerBrand', 'makeInstallerBrand',
+        'captureLiveBindings', 'geometryPathFriendPort', 'geometryAuthorityBindings',
+        's4cToiModule', 'findEarliestTriangleMaterialWitness', '__modules', '__require',
+      ].filter((name) => Object.hasOwn(api, name) || Object.hasOwn(frame.contentWindow, name));
+      const sameToiExact = (entry) => entry.sameToi
+        && entry.sameToi.featurePointError <= 1e-11
+        && entry.sameToi.materialPointError <= 1e-11
+        && entry.sameToi.commonPointError <= 1e-11
+        && entry.sameToi.signedClosingError <= 1e-10
+        && entry.sameToi.normalMagnitudeError <= 1e-12;
+      const foundCases = witnessCases.filter((entry) => entry.found);
+      const checks = {
+        hooksPresent: missing.length === 0,
+        mainClosed: description.main === false && description.authorityAuthorized === false,
+        honestDomainStop: run.ok === false && run.status === 'domain-stop'
+          && run.trajectoryAuthorityClosed === false
+          && run.geometryKernelCalled === false && run.kktCalled === false
+          && run.publicationWritten === false
+          && run.materialRemovalDefined === false && run.fracturePathDefined === false,
+        realPrivate78fBinding: run.checkpointPass === true && run.realRapier === true
+          && run.realPreparedSession === true && run.realParameterTooth === true
+          && run.captureCount === 1 && run.private78fCallCount === 1
+          && run.private78fModuleIdentityBound === true
+          && run.exactReturnedTokenWeakKeyBound === true
+          && run.completeCheckpointSfreeCapture === true,
+        realTipWitness: run.toiStatus === 'contact'
+          && run.toiContactRole === 'tip' && run.toiFeatureEdgeId === 'working-face'
+          && run.toiRemovalAllowedLocally === true
+          && run.toiCommonPointExact === true && run.toiNormalExact === true
+          && run.toiSignedClosingVelocity > 0,
+        exactSpatialBudgets: run.rigidSpatialGate === 0.00008
+          && run.witnessSpatialGate === 0.000005
+          && run.toiMaximumUnresolvedSpatialError <= run.witnessSpatialGate
+          && foundCases.every((entry) => entry.separation <= entry.rigid80MicrometreGate
+            && entry.maximumUnresolvedSpatialError <= entry.witness5MicrometreGate),
+        exactAdvanceCount: run.worldStepDelta === 1 && run.forceApplicationDelta === 1
+          && run.freeCaptureDelta === 1 && run.qWriteDelta === 0
+          && run.captureKktSolveDelta === 0 && run.capturePublicationWriteDelta === 0,
+        restoredCompleteRoot: run.acceptedRootExact === true
+          && run.configuredRootExact === true && run.scenarioRootExact === true
+          && run.rootBeforeSha256 === run.rootAfterSha256
+          && run.scenarioRootBeforeSha256 === run.scenarioRootAfterSha256
+          && run.exposedRootExact === true && run.physicalRootExact === true
+          && run.damageRootExact === true && run.bookkeepingRootExact === true
+          && run.solverGroupsRootExact === true && run.mlcpAliasRootExact === true
+          && run.forkResidualRootExact === true,
+        staleAfterRestore: run.capabilityOpaque === true && run.capabilityStaleAfterRestore === true,
+        declaredBindingFields: description.boundFields.includes('toiModuleIdentity')
+          && description.boundFields.includes('toiStartState')
+          && description.boundFields.includes('toiEndState')
+          && description.boundFields.includes('toiWitnessIdentity')
+          && description.boundFields.includes('remainingGeometryIdentity')
+          && description.boundFields.length === run.checkpointBoundFields.length
+          && description.boundFields.every((field) => run.checkpointBoundFields.includes(field))
+          && description.fullAuthorityBoundFields.length === 0,
+        tipRootBackOwnership: byWitnessId['tip-first']?.featureVertexId === 'tip'
+          && byWitnessId['tip-first']?.featureEdgeId === 'working-face'
+          && byWitnessId['tip-first']?.workingFace === true
+          && byWitnessId['tip-first']?.removalAllowedBy78f === true
+          && byWitnessId['root-first']?.featureVertexId === 'root'
+          && byWitnessId['root-first']?.featureEdgeId === 'root-edge'
+          && byWitnessId['root-first']?.workingFace === false
+          && byWitnessId['root-first']?.domainAction === 'stop-non-working-boundary'
+          && byWitnessId['back-edge-first']?.featureEdgeId === 'back-edge'
+          && byWitnessId['back-edge-first']?.workingFace === false
+          && byWitnessId['back-edge-first']?.domainAction === 'stop-non-working-boundary',
+        rotationalTransient: byWitnessId['rotational-midstep-enter-exit']?.found === true
+          && byWitnessId['rotational-midstep-enter-exit']?.toi > 0
+          && byWitnessId['rotational-midstep-enter-exit']?.toi < 1,
+        holeReentry: byWitnessId['hole-reentry']?.found === true
+          && byWitnessId['hole-reentry']?.contactClass === 're-entry'
+          && byWitnessId['hole-reentry']?.materialRingId === 'polygon-0:hole-0',
+        noContact: byWitnessId['no-contact']?.found === false
+          && byWitnessId['no-contact']?.status === 'no-contact',
+        sameToiPointNormalClosing: foundCases.every(sameToiExact),
+        privateModuleAndGeneratorCases: witnessCases.length === description.witnessCaseIds.length
+          && witnessCases.every((entry) => entry.moduleIdentityIsPrivate78f === true
+            && entry.inputFeatureMatchesTrustedGenerator === true),
+        fixedCaseScopeHonest: description.realRapierScenarioScope
+          === 'baseline parameter-tip ingress only'
+          && witnessCases.every((entry) => entry.realRapierWorldStep === false
+            && entry.execution === 'real-edge-private-78f-fixed-declared-se2-motion'),
+        attacksActuallyRejected: attacks.length === description.attackIds.length
+          && attacks.every((entry) => entry.actualAttackExecuted === true
+            && entry.rejected === true && entry.status === 'domain-stop'
+            && entry.acceptedRootExact === true
+            && entry.rootBeforeSha256 === entry.rootAfterSha256
+            && entry.worldStepDelta === 1 && entry.forceApplicationDelta === 1
+            && entry.kktSolveDelta === 0 && entry.publicationWriteDelta === 0
+            && entry.qWriteDelta === 0 && entry.capabilityLeaked === false
+            && entry.revocationGenerationAdvanced === true),
+        faultsActuallyRolledBack: faults.length === description.faultIds.length
+          && faults.every((entry) => entry.actualFaultInjected === true
+            && entry.rejected === true && entry.status === 'domain-stop'
+            && entry.acceptedRootExact === true
+            && entry.rootBeforeSha256 === entry.rootAfterSha256
+            && entry.worldStepDelta === 1 && entry.forceApplicationDelta === 1
+            && entry.prepareCallDelta === 0 && entry.kktSolveDelta === 0
+            && entry.publicationWriteDelta === 0 && entry.qWriteDelta === 0
+            && entry.capabilityLeaked === false
+            && entry.revocationGenerationAdvanced === true),
+        noRawPublicAuthority: forbidden.length === 0,
+        laterClassicPrivate: lexical.moduleType === 'undefined'
+          && lexical.moduleReferenceError === true
+          && lexical.tableType === 'undefined' && lexical.tableReferenceError === true,
+        fixedHookArguments: await rejects(() => api.__qaGeometryPathAuthorityDescribe({}))
+          && await rejects(() => api.__qaGeometryPathAuthorityRun({}))
+          && await rejects(() => api.__qaGeometryPathAuthorityRun(runId, {}))
+          && await rejects(() => api.__qaGeometryPathAuthorityAttack(description.attackIds[0], {}))
+          && await rejects(() => api.__qaGeometryPathAuthorityFault(description.faultIds[0], {}))
+          && await rejects(() => api.__qaGeometryPathAuthorityWitness(description.witnessCaseIds[0], {}))
+          && await rejects(() => api.__qaGeometryPathAuthorityAttack('unknown'))
+          && await rejects(() => api.__qaGeometryPathAuthorityFault('unknown'))
+          && await rejects(() => api.__qaGeometryPathAuthorityWitness('unknown')),
+      };
+      out.textContent = JSON.stringify({
+        schema: 'real-sfree-private-toi-parameter-checkpoint-browser-v1',
+        pass: Object.values(checks).every(Boolean), checks, missing, forbidden,
+        lexical, description, run, witnessCases, attacks, faults,
+      });
+    } catch (error) {
+      out.textContent = JSON.stringify({
+        schema: 'real-sfree-private-toi-parameter-checkpoint-browser-v1',
+        pass: false, error: String(error?.stack || error),
+      });
+    }
+  }, { once: true });
+  frame.src = `/candidate/index.html?qa=privateToiParam-${Date.now()}`;
+})();
+</script>

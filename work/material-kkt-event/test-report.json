@@ -1,0 +1,57 @@
+{
+  "suite": "material-kkt-event",
+  "passed": 10,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "prescribed material impulse is simultaneous with structural clamping",
+      "ok": true,
+      "durationMs": 4.5303
+    },
+    {
+      "name": "piecewise material work crosses an active-set switch exactly",
+      "ok": true,
+      "durationMs": 0.6157
+    },
+    {
+      "name": "work root binds the same lambda, qPost, active IDs and geometry payload",
+      "ok": true,
+      "durationMs": 6.3162
+    },
+    {
+      "name": "unaffordable virgin-area slice is refused with a slice-only diagnostic",
+      "ok": true,
+      "durationMs": 0.6626
+    },
+    {
+      "name": "non-monotone geometry response is a domain stop, not an adjusted impulse",
+      "ok": true,
+      "durationMs": 1.2589
+    },
+    {
+      "name": "zero-bias event is energy non-increasing and work closes the energy drop",
+      "ok": true,
+      "durationMs": 1.2951
+    },
+    {
+      "name": "commit receives the prepared state directly and rejects a mixed-p binding",
+      "ok": true,
+      "durationMs": 2.4678
+    },
+    {
+      "name": "fault after partial commit rolls every byte of serialisable state back",
+      "ok": true,
+      "durationMs": 4.3911
+    },
+    {
+      "name": "same input is deterministic including root, segmentation and signature",
+      "ok": true,
+      "durationMs": 2.6315
+    },
+    {
+      "name": "seeded coupled systems preserve the zero-bias work/energy identity through switches",
+      "ok": true,
+      "durationMs": 26.2519
+    }
+  ]
+}

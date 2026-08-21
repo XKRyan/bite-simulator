@@ -1,0 +1,46 @@
+{
+  "pass": true,
+  "prefixOnly": true,
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0",
+  "candidateSha256": "C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9",
+  "dxfParentManifestSha256": "C1749150DF19BA54B3F95FBA733D3B7A5846923468E48498F418E23E0B7D780B",
+  "sourcePortSha256": "BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B",
+  "results": [
+    {
+      "name": "private IIFE is not exported and material/manual-inertia gates remain closed",
+      "ok": true,
+      "detail": {
+        "durationMs": 48
+      }
+    },
+    {
+      "name": "strict parser/topology/floor/triangulator/rebuild faults roll back complete exposed state",
+      "ok": true,
+      "detail": {
+        "durationMs": 185
+      }
+    },
+    {
+      "name": "browser pipeline rejects independent equal-area wrong meshes and restores exactly",
+      "ok": true,
+      "detail": {
+        "durationMs": 74
+      }
+    },
+    {
+      "name": "real partial Rapier rebuild failure restores old world and it continues bit-exact",
+      "ok": true,
+      "detail": {
+        "durationMs": 608
+      }
+    },
+    {
+      "name": "actual geometric initial overlap rejects with exact rollback",
+      "ok": true,
+      "detail": {
+        "durationMs": 24
+      }
+    }
+  ],
+  "failures": []
+}

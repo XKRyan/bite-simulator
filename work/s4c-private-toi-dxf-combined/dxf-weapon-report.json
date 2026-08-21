@@ -1,0 +1,58 @@
+{
+  "pass": true,
+  "candidateSha256": "C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9",
+  "sourcePortSha256": "BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B",
+  "solid": {
+    "expected": {
+      "area": 0.0048,
+      "centroidX": 0,
+      "pivotInertia": 0.0001666666666666667,
+      "centralInertia": 0.0001666666666666667
+    },
+    "observed": {
+      "area": 0.0048,
+      "centroid": {
+        "x": 0,
+        "y": 0
+      },
+      "pivotInertia": 0.0001666666666666667,
+      "centralInertia": 0.0001666666666666667,
+      "colliderCount": 2,
+      "triangleCount": 2
+    }
+  },
+  "hole": {
+    "expected": {
+      "area": 0.004399999999999999,
+      "centroidX": -0.0018181818181818188,
+      "pivotInertia": 0.00017333333333333336,
+      "centralInertia": 0.00017267217630853997
+    },
+    "observed": {
+      "area": 0.004399999999999999,
+      "centroid": {
+        "x": -0.001818181818181818,
+        "y": 0
+      },
+      "pivotInertia": 0.00017333333333333336,
+      "centralInertia": 0.00017267217630853997,
+      "colliderCount": 8,
+      "triangleCount": 8,
+      "rapier": {
+        "mass": 0.20000000298023224,
+        "localCom": {
+          "x": -0.001818181830458343,
+          "y": 0
+        },
+        "centralInertia": 0.00017267218208871782
+      }
+    }
+  },
+  "observed": {
+    "recomputedPivotInertiaAt025kg": 0.00021666666666666668,
+    "presetMigratedMass": 0.04615384615384615,
+    "presetDerivedPivotInertia": 0.000039999999999999996,
+    "presetInertiaDerivedFromMassAndGeometry": true,
+    "materialSwitch": false
+  }
+}

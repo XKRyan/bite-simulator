@@ -1,0 +1,8 @@
+{
+  "schema": "exact-sweep-cell-union-random-audit-v1",
+  "pass": true,
+  "cases": 256,
+  "gridCellsPerCase": 256,
+  "totalRectangles": 1161,
+  "maximumUnionPieces": 24
+}

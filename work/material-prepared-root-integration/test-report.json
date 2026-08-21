@@ -1,0 +1,148 @@
+{
+  "schema": "material-prepared-root-integration-s4a-v1",
+  "source": {
+    "path": "work/material-prepared-root-integration/free-cluster-prepared.js",
+    "sha256": "AE46B3E461BFD5BE7641E71FD279BB2BF56F7743BFB3137ECB36215498F691BF"
+  },
+  "signedInputs": {
+    "p0": {
+      "path": "work/material-free-cluster-integration/free-cluster.js",
+      "sha256": "9BD6EC52CC6BBBF0EB09B75EB5CA53F8BD23BFACDCD4897C515523BC18F9715D"
+    },
+    "coulomb": {
+      "path": "work/kkt-coulomb-extension/event-kkt-coulomb.js",
+      "sha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E"
+    },
+    "certifiedCoulombV3": {
+      "path": "work/material-prepared-root-integration/event-kkt-coulomb-v3.js",
+      "sha256": "CD79940C17A9D2BD836C4322CC0A586ED3B3237FA63E7FCF40CB9BA4D08A1035"
+    },
+    "analyticGeometryOracleQa": {
+      "path": "work/material-prepared-root-integration/geometry-interval-oracle-qa.js",
+      "sha256": "AFC2308BC648F52D529FE731D86DE78DDD5FA8912AC5BAAABD11C72600ECBAFE"
+    }
+  },
+  "preparedRootTests": [
+    {
+      "name": "frozen source locks",
+      "ok": true
+    },
+    {
+      "name": "signed least root is session-owned and frozen",
+      "ok": true
+    },
+    {
+      "name": "finish reuses exact accepted sample with zero solve and zero freshArea",
+      "ok": true
+    },
+    {
+      "name": "P1 negative: foreign or cloned prepared root is refused before writeback",
+      "ok": true
+    },
+    {
+      "name": "P1 negative: mixed/later caller root cannot substitute for least root",
+      "ok": true
+    },
+    {
+      "name": "P1 negative: finish has no solver or geometry callback re-entry",
+      "ok": true
+    },
+    {
+      "name": "callback-visible geometry mutation is restored and token is retryable",
+      "ok": true
+    },
+    {
+      "name": "partial accepted writeback fault restores body, closure, audit and token",
+      "ok": true
+    },
+    {
+      "name": "prepare publication fault removes capability and restores invocation ledger",
+      "ok": true
+    },
+    {
+      "name": "missing callback transaction domain is refused before root solve",
+      "ok": true
+    },
+    {
+      "name": "loaded v3 solver and geometry provider must match exact trusted hashes",
+      "ok": true
+    }
+  ],
+  "p1NegativeTests": {
+    "passed": 3,
+    "total": 3
+  },
+  "frozenP0Conformance": {
+    "passed": 15,
+    "total": 15,
+    "ok": true,
+    "results": [
+      {
+        "name": "frozen source locks and signed normal/Coulomb overlap",
+        "ok": true
+      },
+      {
+        "name": "advanceFree owns one world step, one force integration and frozen Wact",
+        "ok": true
+      },
+      {
+        "name": "one Sfree cannot finish material after structural finish",
+        "ok": true
+      },
+      {
+        "name": "one Sfree cannot finish structural after material finish",
+        "ok": true
+      },
+      {
+        "name": "dry lambda trial is deterministic and byte-pure",
+        "ok": true
+      },
+      {
+        "name": "contact rows can only come from the frozen Sfree contactFrame",
+        "ok": true
+      },
+      {
+        "name": "finishMaterial preserves accepted same-p rows modes qPost and ticket",
+        "ok": true
+      },
+      {
+        "name": "mixed accepted p rows modes or qPost are refused before mutation",
+        "ok": true
+      },
+      {
+        "name": "one h binds free Moreau work and geometry payload",
+        "ok": true
+      },
+      {
+        "name": "inverse mass is frozen in Sfree contactFrame and missing Minv is refused",
+        "ok": true
+      },
+      {
+        "name": "all declared exception stages restore exposed state and solverGroups",
+        "ok": true
+      },
+      {
+        "name": "onset restitution is applied once",
+        "ok": true
+      },
+      {
+        "name": "persistent contact takes ownership without restitution replay",
+        "ok": true
+      },
+      {
+        "name": "Coulomb candidate upper bound is a pure solver-domain-stop",
+        "ok": true
+      },
+      {
+        "name": "identical Sfree inputs produce identical trials",
+        "ok": true
+      }
+    ]
+  },
+  "summary": {
+    "preparedPassed": 11,
+    "preparedTotal": 11,
+    "p0": "15/15",
+    "ok": true
+  }
+}

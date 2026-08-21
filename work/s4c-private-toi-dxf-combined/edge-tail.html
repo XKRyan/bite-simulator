@@ -1,0 +1,102 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>TAIL BOOT</title>
+<style>iframe{position:absolute;width:2px;height:2px;opacity:.01}</style>
+<iframe id="candidate" src="index.html?qa&amp;independent-tail"></iframe>
+<iframe id="baseline" src="baseline-index.html?qa&amp;independent-tail-baseline"></iframe>
+<pre id="out">PENDING</pre>
+<script>
+(() => {
+  'use strict';
+  const out = document.querySelector('#out');
+  const results = []; const failures = [];
+  const progress = (value) => { out.textContent = value; document.title = value; };
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const exact = (actual, expected, message) => {
+    const left = JSON.stringify(actual); const right = JSON.stringify(expected);
+    if (left !== right) throw new Error(`${message}; actual=${left.slice(0, 1000)} expected=${right.slice(0, 1000)}`);
+  };
+  const yieldTask = () => new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => { channel.port1.close(); channel.port2.close(); resolve(); };
+    channel.port2.postMessage(0);
+  });
+  const waitFor = async (predicate, label) => {
+    const deadline = performance.now() + 90000;
+    while (performance.now() < deadline) {
+      const value = predicate(); if (value) return value;
+      await yieldTask();
+    }
+    throw new Error(`timeout waiting for ${label}`);
+  };
+  const normalise = (value) => {
+    const clone = JSON.parse(JSON.stringify(value));
+    if (clone.cad) {
+      for (const key of ['strictImported', 'strictSourceSha256', 'geometryFloor', 'holeCount', 'triangleCount', 'netArea', 'triangulatedArea', 'coverageProof']) delete clone.cad[key];
+    }
+    return clone;
+  };
+  const compare = (candidate, baseline, label) => {
+    exact(normalise(candidate.BiteSim.getState()), normalise(baseline.BiteSim.getState()), `${label}: state`);
+    exact(candidate.BiteSim.getMetrics(), baseline.BiteSim.getMetrics(), `${label}: metrics`);
+    exact(candidate.BiteSim.__qaCurrentFrame(), baseline.BiteSim.__qaCurrentFrame(), `${label}: current frame`);
+    exact(
+      [...candidate.document.querySelectorAll('[data-param]')].map((node) => [node.dataset.param, node.value, node.checked]),
+      [...baseline.document.querySelectorAll('[data-param]')].map((node) => [node.dataset.param, node.value, node.checked]),
+      `${label}: parameter controls`,
+    );
+    assert(candidate.document.querySelector('#eventLog')?.innerHTML === baseline.document.querySelector('#eventLog')?.innerHTML, `${label}: history DOM`);
+  };
+  const restore = (win) => { win.document.querySelector('#restoreDefaults').click(); };
+  const test = async (name, params, index, candidate, baseline) => {
+    progress(`TAIL ${index}/2 restore and configure: ${name}`);
+    restore(candidate); restore(baseline);
+    candidate.BiteSim.setParams(params); baseline.BiteSim.setParams(params);
+    compare(candidate, baseline, `${name} initial`);
+    progress(`TAIL ${index}/2 candidate 2000 steps: ${name}`);
+    candidate.BiteSim.advance(2000);
+    progress(`TAIL ${index}/2 baseline 2000 steps: ${name}`);
+    baseline.BiteSim.advance(2000);
+    progress(`TAIL ${index}/2 compare complete state: ${name}`);
+    compare(candidate, baseline, `${name} 1s`);
+    const state = candidate.BiteSim.getState();
+    assert(state.failureDomain !== 'internal', `${name}: internal failure`);
+    assert(state.physics.traceableCuttingContinuousToiEnabled === false, `${name}: material switch enabled`);
+  };
+  const run = async () => {
+    progress('TAIL waiting for candidate');
+    const candidate = await waitFor(() => document.querySelector('#candidate').contentWindow?.BiteSim && document.querySelector('#candidate').contentWindow, 'candidate');
+    progress('TAIL waiting for baseline');
+    const baseline = await waitFor(() => document.querySelector('#baseline').contentWindow?.BiteSim && document.querySelector('#baseline').contentWindow, 'baseline');
+    const cases = [
+      ['rigid built-in CAD bit-exact with frozen S3', { contactModel: 'rigid', simulationDuration: 1 }],
+      ['rigid parameter weapon/fork bit-exact with frozen S3', { contactModel: 'rigid', simulationDuration: 1, paramWeaponEnabled: true, paramForkEnabled: true }],
+    ];
+    for (let index = 0; index < cases.length; index += 1) {
+      const [name, params] = cases[index]; const started = performance.now();
+      try {
+        await test(name, params, index + 1, candidate, baseline);
+        results.push({ name, ok: true, durationMs: Math.round(performance.now() - started) });
+      } catch (error) {
+        const detail = String(error?.stack || error);
+        results.push({ name, ok: false, durationMs: Math.round(performance.now() - started), error: detail });
+        failures.push({ name, detail });
+      }
+    }
+    const report = {
+      pass: failures.length === 0,
+      browser: navigator.userAgent,
+      candidateSha256: 'C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9',
+      baselineSha256: '2381261205DCF64E82439480DDF937DFCE7AD10872FF2509334900E0B63B89D7',
+      results,
+      failures,
+    };
+    out.textContent = JSON.stringify(report);
+    document.title = report.pass ? 'TAIL PASS' : 'TAIL FAIL';
+  };
+  run().catch((error) => {
+    out.textContent = JSON.stringify({ pass: false, fatal: String(error?.stack || error), results, failures });
+    document.title = 'TAIL FATAL';
+  });
+})();
+</script>

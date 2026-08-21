@@ -1,0 +1,141 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>WEAPON BOOT</title>
+<iframe id="subject" src="index.html?qa&amp;independent-min-weapon"></iframe>
+<pre id="out">PENDING</pre>
+<script>
+(() => {
+  'use strict';
+  const out = document.querySelector('#out');
+  const progress = (value) => { out.textContent = value; document.title = value; };
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const near = (actual, expected, tolerance, message) => {
+    if (!Number.isFinite(actual) || Math.abs(actual - expected) > tolerance) throw new Error(`${message}: ${actual} versus ${expected}`);
+  };
+  const yieldTask = () => new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => { channel.port1.close(); channel.port2.close(); resolve(); };
+    channel.port2.postMessage(0);
+  });
+  const entity = (points) => ['0', 'LWPOLYLINE', '8', 'MIN', '90', String(points.length), '70', '1', ...points.flatMap(([x, y]) => ['10', String(x), '20', String(y)])];
+  const dxf = (...entities) => ['0', 'SECTION', '2', 'ENTITIES', ...entities.flat(), '0', 'ENDSEC', '0', 'EOF'].join('\n');
+  const outer = [[-40, -30], [40, -30], [40, 30], [-40, 30]];
+  const legalSolid = dxf(entity(outer));
+  const legalHole = dxf(
+    entity(outer),
+    entity([[10, -10], [30, -10], [30, 10], [10, 10]]),
+  );
+  const run = async () => {
+    progress('WEAPON waiting for BiteSim');
+    const frame = document.querySelector('#subject');
+    const deadline = performance.now() + 90000;
+    while (!frame.contentWindow?.BiteSim) {
+      if (performance.now() > deadline) throw new Error('BiteSim readiness timeout');
+      await yieldTask();
+    }
+    const win = frame.contentWindow; const weaponMass = 0.2;
+    progress('WEAPON configure analytic import');
+    win.BiteSim.setParams({ contactModel: 'rigid', weaponMass, weaponMirrorX: false, weaponMirrorY: false, targetSceneX: 1000 });
+    progress('WEAPON import and validate canonical solid');
+    const solidImported = win.BiteSim.importDxfText('weapon', legalSolid, 'minimal-analytic-weapon-solid.dxf');
+    const solidArea = 0.08 * 0.06;
+    const solidR2 = (0.08 ** 2 + 0.06 ** 2) / 12;
+    const solidState = win.BiteSim.getState(); const solidMetrics = win.BiteSim.getMetrics(); const solidReduced = win.BiteSim.__qaRigReducedMassAudit();
+    assert(solidImported.sourceSha256 === 'BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B', 'solid wrong source port');
+    assert(solidState.cad.strictImported && solidState.cad.holeCount === 0 && solidState.cad.triangleCount === 2, 'solid proof mismatch');
+    assert(solidState.activeGeometry.weapon.colliderCount === 2, 'solid collider count mismatch');
+    near(solidMetrics.weaponMassShapeArea, solidArea, 1e-15, 'solid area');
+    near(solidMetrics.weaponMassShapeCentroid.x, 0, 1e-15, 'solid COM x');
+    near(solidMetrics.weaponMassShapeCentroid.y, 0, 1e-15, 'solid COM y');
+    near(solidMetrics.inertia, weaponMass * solidR2, 1e-15, 'solid pivot inertia');
+    near(solidMetrics.weaponComInertia, weaponMass * solidR2, 1e-15, 'solid central inertia');
+    assert(solidReduced.valid, 'solid Rapier reduced audit invalid');
+    near(solidReduced.weapon.mass, weaponMass, weaponMass * 2e-6, 'solid Rapier mass');
+    near(solidReduced.weapon.comInertia, weaponMass * solidR2, weaponMass * solidR2 * 2e-6, 'solid Rapier central inertia');
+    progress('WEAPON import canonical hole');
+    const imported = win.BiteSim.importDxfText('weapon', legalHole, 'minimal-analytic-weapon-hole.dxf');
+    progress('WEAPON validate canonical/Rapier properties');
+    const outerArea = 0.08 * 0.06; const holeArea = 0.02 * 0.02; const area = outerArea - holeArea;
+    const centroidX = -(holeArea * 0.02) / area;
+    const polarOuter = outerArea * (0.08 ** 2 + 0.06 ** 2) / 12;
+    const polarHole = holeArea * ((0.02 ** 2 + 0.02 ** 2) / 12 + 0.02 ** 2);
+    const r2Pivot = (polarOuter - polarHole) / area;
+    const r2Com = r2Pivot - centroidX ** 2;
+    const state = win.BiteSim.getState(); const metrics = win.BiteSim.getMetrics(); const reduced = win.BiteSim.__qaRigReducedMassAudit();
+    assert(imported.sourceSha256 === 'BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B', 'wrong source port');
+    assert(imported.geometryFloor === 0.00008, 'wrong geometry floor');
+    assert(state.cad.strictImported && state.cad.holeCount === 1 && state.cad.triangleCount > 0, 'strict hole proof missing');
+    assert(state.activeGeometry.weapon.colliderCount === state.cad.triangleCount, 'collider/proof count mismatch');
+    near(metrics.weaponMassShapeArea, area, 1e-15, 'area');
+    near(metrics.weaponMassShapeCentroid.x, centroidX, 1e-15, 'COM x');
+    near(metrics.weaponMassShapeCentroid.y, 0, 1e-15, 'COM y');
+    near(metrics.inertia, weaponMass * r2Pivot, 1e-15, 'pivot inertia');
+    near(metrics.weaponComInertia, weaponMass * r2Com, 1e-15, 'central inertia');
+    assert(reduced.valid, 'Rapier reduced mass audit invalid');
+    near(reduced.weapon.mass, weaponMass, weaponMass * 2e-6, 'Rapier mass');
+    near(reduced.weapon.localCom.x, centroidX, 2e-7, 'Rapier COM x');
+    near(reduced.weapon.comInertia, weaponMass * r2Com, weaponMass * r2Com * 2e-6, 'Rapier central inertia');
+    const inertiaBefore = metrics.inertiaInput;
+    win.BiteSim.setParams({ weaponInertia: 9.99e99 });
+    assert(win.BiteSim.getMetrics().inertiaInput === inertiaBefore, 'manual inertia admitted');
+    win.BiteSim.setParams({ weaponMass: 0.25, weaponInertia: 1 });
+    const recomputed = win.BiteSim.getMetrics();
+    near(recomputed.inertia, 0.25 * r2Pivot, 1e-15, 'mass edit inertia');
+    assert(recomputed.inertiaInput !== 1, 'manual inertia survived mass edit');
+    progress('WEAPON apply legacy preset through mass-only migration');
+    const presetInput = win.document.querySelector('[data-param="robotPreset"]');
+    presetInput.value = '454g';
+    presetInput.dispatchEvent(new win.Event('change', { bubbles: true }));
+    win.document.querySelector('#applyRobotPreset').click();
+    const presetMetrics = win.BiteSim.getMetrics(); const presetState = win.BiteSim.getState();
+    near(presetMetrics.inertia, 40e-6, 1e-15, 'legacy preset inertia was not reproduced through derived mass');
+    near(presetMetrics.weaponMass, 40e-6 / r2Pivot, 1e-12, 'legacy preset did not migrate to mass input');
+    assert(presetState.activeGeometry.weapon.inertiaDerivedFromMassAndGeometry === true, 'preset made inertia manual');
+    assert(win.document.querySelector('[data-param="weaponInertia"]').readOnly, 'preset made inertia field editable');
+    assert(typeof win.BiteSim.__qaGeometryPathAuthorityDescribe === 'function', 'S4c private hook disappeared after DXF/preset flow');
+    assert(win.BiteSim.__qaGeometryPathAuthorityDescribe().main === false, 'combined MAIN enabled after DXF/preset flow');
+    assert(win.BiteSim.getState().physics.traceableCuttingContinuousToiEnabled === false, 'material switch enabled');
+    const report = {
+      pass: true,
+      candidateSha256: 'C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9',
+      sourcePortSha256: imported.sourceSha256,
+      solid: {
+        expected: { area: solidArea, centroidX: 0, pivotInertia: weaponMass * solidR2, centralInertia: weaponMass * solidR2 },
+        observed: {
+          area: solidMetrics.weaponMassShapeArea,
+          centroid: solidMetrics.weaponMassShapeCentroid,
+          pivotInertia: solidMetrics.inertia,
+          centralInertia: solidMetrics.weaponComInertia,
+          colliderCount: solidState.activeGeometry.weapon.colliderCount,
+          triangleCount: solidState.cad.triangleCount,
+        },
+      },
+      hole: {
+        expected: { area, centroidX, pivotInertia: weaponMass * r2Pivot, centralInertia: weaponMass * r2Com },
+        observed: {
+          area: metrics.weaponMassShapeArea,
+          centroid: metrics.weaponMassShapeCentroid,
+          pivotInertia: metrics.inertia,
+          centralInertia: metrics.weaponComInertia,
+          colliderCount: state.activeGeometry.weapon.colliderCount,
+          triangleCount: state.cad.triangleCount,
+          rapier: { mass: reduced.weapon.mass, localCom: reduced.weapon.localCom, centralInertia: reduced.weapon.comInertia },
+        },
+      },
+      observed: {
+        recomputedPivotInertiaAt025kg: recomputed.inertia,
+        presetMigratedMass: presetMetrics.weaponMass,
+        presetDerivedPivotInertia: presetMetrics.inertia,
+        presetInertiaDerivedFromMassAndGeometry: presetState.activeGeometry.weapon.inertiaDerivedFromMassAndGeometry,
+        materialSwitch: win.BiteSim.getState().physics.traceableCuttingContinuousToiEnabled,
+      },
+    };
+    out.textContent = JSON.stringify(report);
+    document.title = 'WEAPON PASS';
+  };
+  run().catch((error) => {
+    out.textContent = JSON.stringify({ pass: false, fatal: String(error?.stack || error) });
+    document.title = 'WEAPON FAIL';
+  });
+})();
+</script>

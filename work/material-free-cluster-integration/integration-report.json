@@ -1,0 +1,26 @@
+{
+  "schema": "material-free-cluster-integration-report-v1",
+  "module": {
+    "path": "work/material-free-cluster-integration/free-cluster.js",
+    "sha256": "46E567680F5E2AD548DCCBD117107EFB2D1F2FB668949B58E967D6A609044641"
+  },
+  "lockedInputs": {
+    "s2CandidateSha256": "6E8E638407ED1B4F1A3A9F3C97A1E5C191AB6AE8D843CCB1622679E48312C320",
+    "coulombKktSha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E",
+    "normalKktSha256": "866BE26C0A0DF18D114B1026EEC08C943E6D9F672265F7DB0B49C10C28836719",
+    "contractCoreSha256": "3281EA53CB86601397D643F5165244584539E8C7A84D7F4E4FD9F5D662C34662"
+  },
+  "verification": {
+    "command": "node work/material-free-cluster-qa/run-tests.js --module work/material-free-cluster-integration/free-cluster.js",
+    "referenceContract": "14/14",
+    "negativeMutantsCaught": "10/10",
+    "integrationContract": "14/14",
+    "status": "passed",
+    "qaReportSha256": "8F9AAE1DAC44B2606A70F6D054663566ECF08FEDE158EA24ADE28702EB730066"
+  },
+  "scope": {
+    "geometryPublished": false,
+    "productionWired": false,
+    "result": "frozen commit-ticket boundary ready for independent formula audit and later root-transaction wiring"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schema": "split-scale-mode-family-v2.1-focused-test-report-v1",
+  "pass": true,
+  "passed": 10,
+  "total": 10,
+  "modulePins": {
+    "finiteRotationV2_1": "6C55302E10BC1EECB0333D8549A3A55441A5047869CAE83E920B0F6A00C58449",
+    "modeFamilyV2_1": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6"
+  },
+  "fixedPolicies": {
+    "transformArithmeticOperationBudget": 96,
+    "trigProviderCertified": false,
+    "productionNumericalAuthority": false
+  },
+  "checks": [
+    {
+      "name": "both exact measured bounds are required and each nextDown is rejected",
+      "pass": true,
+      "elapsedMs": 11
+    },
+    {
+      "name": "NaN infinities and stale single-bound API are rejected",
+      "pass": true,
+      "elapsedMs": 5
+    },
+    {
+      "name": "interior p rotation component is covered by derivative half-width inflation",
+      "pass": true,
+      "elapsedMs": 13
+    },
+    {
+      "name": "common world offset raises only transform conditioning, not squared area scale",
+      "pass": true,
+      "elapsedMs": 3
+    },
+    {
+      "name": "floating p jump is enclosed by derivative radius plus twice transform guard",
+      "pass": true,
+      "elapsedMs": 2
+    },
+    {
+      "name": "gamma overflow stops and positive underflow rounds up",
+      "pass": true,
+      "elapsedMs": 0
+    },
+    {
+      "name": "mode family derives two independent common maxima and three signature layers",
+      "pass": true,
+      "elapsedMs": 11
+    },
+    {
+      "name": "caller cannot inject either split bound at family or geometry scope",
+      "pass": true,
+      "elapsedMs": 5
+    },
+    {
+      "name": "path amplification invalidates both stale bounds",
+      "pass": true,
+      "elapsedMs": 1
+    },
+    {
+      "name": "identical inputs and descriptors are deterministic",
+      "pass": true,
+      "elapsedMs": 13
+    }
+  ]
+}

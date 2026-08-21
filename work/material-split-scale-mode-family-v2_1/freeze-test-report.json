@@ -1,0 +1,102 @@
+{
+  "schema": "split-scale-mode-family-v2.1-freeze-test-report-v1",
+  "pass": true,
+  "sourceHashes": {
+    "work/material-split-scale-mode-family-v2_1/finite-rotation-sweep-oracle-v2_1.js": "6C55302E10BC1EECB0333D8549A3A55441A5047869CAE83E920B0F6A00C58449",
+    "work/material-split-scale-mode-family-v2_1/mode-family-geometry-v2_1.js": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6",
+    "work/material-split-scale-mode-family-v2_1/exact-mode-family-geometry-v2_1.js": "B6242837F332E0A86131E64DC180CFF14D7E8C6AE3374336CDF8277804F04DF1",
+    "work/material-split-scale-mode-family-v2_1/real-s4d-three-mode-fixture.json": "028DE291979843D5CE7B885E7A1BF44DAFBEAA18080A8E40A43688CF9DD063F1"
+  },
+  "runnerHashes": {
+    "work/material-split-scale-mode-family-v2_1/run-split-scale-tests.js": "6D29EFFD6CDBA7215BE4927C5E65996A182822B94F1279399AF7D262FDB07F2C",
+    "work/material-split-scale-mode-family-v2_1/run-real-s4d-v2_1-fixture.js": "3DC737BD8D155E07A1378F06BDCF1DAE0F1D4AC2410714C7F76B4BDD3FC05D3F",
+    "work/material-split-scale-mode-family-v2_1/run-random-audit.js": "FAFC01D4623D06ACD0B772CA9106216770093E8BBB8A11707608B8BC79B04FC9",
+    "work/material-split-scale-mode-family-v2_1/run-tests.js": "02E4302AF52FE2F1C16A79729350519801F9A97BA54D9A405AFDBA6B9AEEF4B5",
+    "work/material-split-scale-mode-family-v2_1/run-freeze-tests.js": "926CC2BB38D0B9A9C4139085BFA1099D55C221231DC8B52D539A0F64AE3259BC"
+  },
+  "focused": {
+    "pass": true,
+    "passed": 10,
+    "total": 10
+  },
+  "realThreeMode": {
+    "pass": true,
+    "status": "v2.1-real-three-mode-ready",
+    "commonFinalCoordinateScaleUpperBound": 0.07017917700505896,
+    "commonComputedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+    "commonTransformOperandScaleUpperBound": 0.35082008975424306,
+    "signatureCounts": {
+      "availableSuccessfulKernels": 3,
+      "canonicalGeometrySignature": 1,
+      "commonNumericalPolicySignature": 1,
+      "compositeGeometrySnapshotSignature": 1,
+      "pathSignature": 3,
+      "unavailableBecauseRelativeCapSafeStop": false
+    }
+  },
+  "randomSubset": {
+    "schema": "exact-mode-family-rotation-random-audit-v1",
+    "pass": true,
+    "configurations": 2,
+    "intervals": 4,
+    "attemptedSamples": 20,
+    "exactSamples": 20,
+    "topologyCertified": 4,
+    "fullRange": 0,
+    "safeStops": 0,
+    "maximumRelativeWidth": 0.000005399852280374405,
+    "topologyReasons": {}
+  },
+  "preparedRootConsumption": {
+    "pass": false,
+    "status": "expected-domain-stop-not-authorized",
+    "reason": "least-root interval proof is unresolved under the nonzero twice-transform-roundoff interval radius floor",
+    "intervalBudgetWasNotRelaxed": true
+  },
+  "frozenRegression": {
+    "finiteRotation": {
+      "pass": true,
+      "passed": 13
+    },
+    "modeFamily": {
+      "pass": true,
+      "passed": 9
+    },
+    "exactArea": {
+      "pass": true,
+      "passed": 13
+    },
+    "exactUnionRandom": {
+      "pass": true,
+      "passed": 256
+    },
+    "exactModeFamily": {
+      "pass": true,
+      "passed": 10
+    },
+    "preparedRootV3": {
+      "pass": true,
+      "passed": 8
+    }
+  },
+  "unchangedHashes": {
+    "outputs/bite-simulator/app.js": "3A58BFB55ACA173DB63435F75C7FDF19BB0F6D68D42AEABF4E77FC1A7AB2D344",
+    "work/s4c-private-toi-dxf-combined/app-combined-candidate.js": "06B6EC1F6E611DDD4122652DC9763D8F75129904D224ACCA3CABB1AF3D71D0AA",
+    "work/material-finite-rotation-sweep-oracle/finite-rotation-sweep-oracle.js": "9F37F457CD1F5DE6FB76680E136E3FC80900848C79A5E8B3A041D831BCF3D3CF",
+    "work/material-kkt-mode-family-geometry/mode-family-geometry.js": "EDD725432EB01E0A800647A68A6B67E74B4F2AA27A134805FAC21B2D46519EB8",
+    "work/material-exact-triangle-sweep-area/exact-triangle-sweep-area.js": "BC128BAFC05397B073584D5FAF4362A7AD3F09CD91EBBFF173886AD84B43A77B",
+    "work/material-exact-mode-family-geometry/exact-mode-family-geometry.js": "59E0567C0C1545A79A7759BF3379953F9A87159F619C79F8A09BA1256F45A7B0",
+    "work/material-prepared-root-integration/event-kkt-coulomb-v3.js": "385013DF70B3D40B503C9043148F573DCCB4D6EA01ECD51F040F052F5F52C447"
+  },
+  "authority": {
+    "trigProviderCertified": false,
+    "productionNumericalAuthority": false,
+    "productionWiring": false,
+    "preparedRootAuthority": false,
+    "s4dReconnected": false,
+    "qWrites": 0,
+    "geometryCommits": 0,
+    "removals": 0,
+    "main": false
+  }
+}

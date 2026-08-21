@@ -1,0 +1,267 @@
+{
+  "schema": "s4d-real-event-slice-v2-math-fixture-v1",
+  "source": "same fixed real Rapier event-slice replay used by the S4d frozen-chain domain-stop evidence",
+  "pDomain": [
+    0,
+    0.137438953472
+  ],
+  "kktInput": {
+    "qFree": [
+      0.0010077302576974034,
+      50.07998275756836,
+      -0.017214428633451462,
+      0,
+      -0.0007266738102771342,
+      0
+    ],
+    "Minv": [
+      [
+        0.8246090031283873,
+        17.914857577388307,
+        1.8571185000656172,
+        0,
+        0,
+        0
+      ],
+      [
+        17.914857577388307,
+        3596.0353263291554,
+        40.346410610106524,
+        0,
+        0,
+        0
+      ],
+      [
+        1.8571185000656172,
+        40.346410610106524,
+        41554.42799898543,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        11.613646499259577,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        11.613646499259577,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        7018.722496576151
+      ]
+    ],
+    "materialContact": {
+      "id": "parameter-tooth:0",
+      "point": {
+        "x": -0.0002000036337280906,
+        "y": 0.1127496414158127
+      },
+      "normalRow": [
+        -1,
+        0.05499963614080164,
+        0,
+        1,
+        0,
+        3.598358848388994e-7
+      ],
+      "provenance": "private-module-78F53C3A:contact",
+      "normal": {
+        "x": -1,
+        "y": 0
+      },
+      "signedClosingVelocity": 2.751600754610528,
+      "privatelyOwned78fWitness": true,
+      "materialOutwardNormal": {
+        "x": 1,
+        "y": 0
+      },
+      "solverOrientation": "negative-of-same-record-material-outward-row",
+      "rawOutwardRowSignature": "s4d-raw-outward-row-v1-D810B166265D41A9A3D473762B5764685ACDC38DEFD823E4EE5D05BB03308115",
+      "capturedEndpointOutwardRowSignature": "s4d-captured-endpoint-outward-row-v1-D810B166265D41A9A3D473762B5764685ACDC38DEFD823E4EE5D05BB03308115",
+      "rightEndpointPoseTwistSignature": "s4d-right-endpoint-pose-twist-v1-1C4D10DFFA29F0AF24D27B097F369F2D0E582BD995433BED496CC1754E10250A",
+      "endpointNormalizedSpeed": 2.7533730993461822,
+      "velocityComparisonPolicy": "compressive-sign-only; 78F chord speed is not equated to Rapier endpoint qFree speed",
+      "orientationGates": {
+        "sameRecordToiPose": true,
+        "sameTrustedCommonPoint": true,
+        "sameTrustedOutwardNormal": true,
+        "exactCapturedEndpointOutwardRow": true,
+        "rawOutwardRowClosingNegative": true,
+        "private78fSignedClosingPositive": true,
+        "normalizedRowIsExactNegation": true,
+        "compressiveSignAgreementWithoutValueEquality": true
+      }
+    },
+    "structuralContacts": [
+      {
+        "id": "fork-floor:55",
+        "role": "fork-floor",
+        "point": {
+          "x": 0.07200003589464016,
+          "y": -4.9399640131980727e-8
+        },
+        "normalRow": [
+          0,
+          0,
+          0.07199999677909202,
+          0,
+          0,
+          0
+        ],
+        "tangentRow": [
+          -1,
+          0,
+          -0.004500051534231473,
+          0,
+          0,
+          0
+        ],
+        "mu": 0.24,
+        "normalBias": 0
+      }
+    ],
+    "specificCuttingEnergy": 220000000,
+    "width": 0.008,
+    "options": {
+      "maximumContacts": 6,
+      "maximumModeCandidates": 4096,
+      "workRelativeTolerance": 0
+    }
+  },
+  "geometry": {
+    "h": 0.00007410007906219106,
+    "timeFractions": [
+      0,
+      0.0625,
+      0.125,
+      0.1875,
+      0.25,
+      0.3125,
+      0.375,
+      0.4375,
+      0.5,
+      0.5625,
+      0.625,
+      0.6875,
+      0.75,
+      0.8125,
+      0.875,
+      0.9375,
+      1
+    ],
+    "maximumTimeChordError": 0.000005,
+    "workingSegment": {
+      "start": [
+        0.041,
+        0
+      ],
+      "end": [
+        0.055,
+        0
+      ]
+    },
+    "featureStartPosition": [
+      3.8533471524715424e-8,
+      0.05775000527501106
+    ],
+    "featureStartAngle": 1.5745042562484741,
+    "materialStartPosition": [
+      -0.07020000368356705,
+      0.11275000125169754
+    ],
+    "materialStartAngle": 0,
+    "remainingGeometry": [
+      [
+        [
+          [
+            -0.07,
+            -0.008
+          ],
+          [
+            0.07,
+            -0.008
+          ],
+          [
+            0.07,
+            0.008
+          ],
+          [
+            -0.07,
+            0.008
+          ],
+          [
+            -0.07,
+            -0.008
+          ]
+        ]
+      ]
+    ]
+  },
+  "remainingTriangles": [
+    [
+      [
+        -0.07,
+        -0.008
+      ],
+      [
+        0.07,
+        -0.008
+      ],
+      [
+        0.07,
+        0.008
+      ]
+    ],
+    [
+      [
+        -0.07,
+        -0.008
+      ],
+      [
+        0.07,
+        0.008
+      ],
+      [
+        -0.07,
+        0.008
+      ]
+    ]
+  ],
+  "coverIdentity": {
+    "coverDigest": "7D6768CB9E951E9F04E8837F08A9F292B3541C40D3450693D60E6A9F13EF852F",
+    "coverModuleSha256": "BC128BAFC05397B073584D5FAF4362A7AD3F09CD91EBBFF173886AD84B43A77B",
+    "coverExactArea": "1453843120389751904603309020933/649037107316853453566312041152512"
+  },
+  "eventBinding": {
+    "h": 0.00007410007906219106,
+    "hFloat64Bits": "3f136cc5aa3126e9",
+    "toi": 0.00007268507153474263,
+    "fraction": 0.9809041023254397,
+    "tokenId": 1,
+    "qFreeSha256": "9AF4C18AB480CBFDDAD2B603E1D41F2A4895ED3681112DD7D05936865D06B918",
+    "remainingGeometrySha256": "4594D15FEAE8E5AFE7797B141FC0F193D18B365258B694736D7BB2209969D399",
+    "remainingVersion": 0,
+    "contactFrameSignature": "prepared-contact-frame-v1-AA161DE588FB62E7BA6CC288F72FB03BC459A5146B168B81FD9C48D290F7A409",
+    "toiWitnessDigest": "ABDB0D6325F40C84FDAD44BB56B378C4FD560A48FD42592DD17F2E6E3A1FEBB0"
+  },
+  "sourceEvidence": {
+    "probeReportSha256": "1482B0D108627E93B970E246A2B26F848C5754017AC49D69C9822EBF5B66A380",
+    "probeBundleSha256": "E2BBACEF7CD4C583B7705FD668B8613A52A9AE9CAA0A578F41F3306337F268FC",
+    "frozenChainNegativeReportSha256": "3D55188AB7C402B62650E53D809F376CA8295451870084394EF54481138ADE9A",
+    "frozenChainDomainStop": "base mode family stopped: mode kernels do not share one geometry snapshot"
+  }
+}

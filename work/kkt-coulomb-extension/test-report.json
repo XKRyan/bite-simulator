@@ -1,0 +1,72 @@
+{
+  "suite": "kkt-coulomb-extension",
+  "passed": 13,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "stick mode uses one common point and remains inside the Coulomb cone",
+      "ok": true,
+      "durationMs": 5.1056
+    },
+    {
+      "name": "positive slide is the maximum-dissipation edge for negative tangential velocity",
+      "ok": true,
+      "durationMs": 0.636
+    },
+    {
+      "name": "negative slide is the maximum-dissipation edge for positive tangential velocity",
+      "ok": true,
+      "durationMs": 0.6291
+    },
+    {
+      "name": "maximum dissipation resolves a stick-slide boundary deterministically",
+      "ok": true,
+      "durationMs": 1.1694
+    },
+    {
+      "name": "two contacts switch modes and D(p) is integrated on exact affine segments",
+      "ok": true,
+      "durationMs": 2.6472
+    },
+    {
+      "name": "prepared root binds the same p, KKT state, modes, points and geometry payload",
+      "ok": true,
+      "durationMs": 10.305
+    },
+    {
+      "name": "mixed-p or mixed-point commit is refused before mutation",
+      "ok": true,
+      "durationMs": 4.9352
+    },
+    {
+      "name": "fault after partial commit rolls every serialisable byte back",
+      "ok": true,
+      "durationMs": 5.0549
+    },
+    {
+      "name": "incompatible unilateral contacts return an explicit no-feasible-solution domain stop",
+      "ok": true,
+      "durationMs": 0.6601
+    },
+    {
+      "name": "mode candidate upper bound is an explicit domain stop, never truncation",
+      "ok": true,
+      "durationMs": 0.4618
+    },
+    {
+      "name": "material tangential friction is never guessed from structural coefficients",
+      "ok": true,
+      "durationMs": 0.416
+    },
+    {
+      "name": "same input is byte-deterministic including segmentation and binding signature",
+      "ok": true,
+      "durationMs": 6.8245
+    },
+    {
+      "name": "seeded coupled systems preserve cone, maximum-dissipation and no-KE-gain invariants",
+      "ok": true,
+      "durationMs": 27.607
+    }
+  ]
+}
