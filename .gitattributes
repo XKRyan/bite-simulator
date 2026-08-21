@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.dwg binary
+
+# Frozen artifacts whose signed hashes include their original line endings.
+outputs/bite-simulator/app.js -text
+outputs/bite-simulator/assets/default-fork.dxf -text
+outputs/bite-simulator/assets/default-weapon.dxf -text
+work/s4c-private-toi-dxf-combined/app-combined-candidate.js -text

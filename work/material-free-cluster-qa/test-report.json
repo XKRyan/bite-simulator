@@ -1,0 +1,232 @@
+{
+  "schema": "material-free-cluster-contract-qa-v1",
+  "frozenSources": [
+    {
+      "id": "s2-candidate",
+      "path": "work/material-event-integrator-design/app-candidate.js",
+      "expectedSha256": "6E8E638407ED1B4F1A3A9F3C97A1E5C191AB6AE8D843CCB1622679E48312C320",
+      "actualSha256": "6E8E638407ED1B4F1A3A9F3C97A1E5C191AB6AE8D843CCB1622679E48312C320"
+    },
+    {
+      "id": "signed-coulomb-kkt",
+      "path": "work/kkt-coulomb-extension/event-kkt-coulomb.js",
+      "expectedSha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E",
+      "actualSha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E"
+    },
+    {
+      "id": "signed-normal-kkt",
+      "path": "work/material-kkt-event/event-kkt.js",
+      "expectedSha256": "866BE26C0A0DF18D114B1026EEC08C943E6D9F672265F7DB0B49C10C28836719",
+      "actualSha256": "866BE26C0A0DF18D114B1026EEC08C943E6D9F672265F7DB0B49C10C28836719"
+    }
+  ],
+  "reference": {
+    "ok": true,
+    "passed": 15,
+    "failed": 0,
+    "total": 15,
+    "results": [
+      {
+        "name": "frozen source locks and signed normal/Coulomb overlap",
+        "ok": true
+      },
+      {
+        "name": "advanceFree owns one world step, one force integration and frozen Wact",
+        "ok": true
+      },
+      {
+        "name": "one Sfree cannot finish material after structural finish",
+        "ok": true
+      },
+      {
+        "name": "one Sfree cannot finish structural after material finish",
+        "ok": true
+      },
+      {
+        "name": "dry lambda trial is deterministic and byte-pure",
+        "ok": true
+      },
+      {
+        "name": "contact rows can only come from the frozen Sfree contactFrame",
+        "ok": true
+      },
+      {
+        "name": "finishMaterial preserves accepted same-p rows modes qPost and ticket",
+        "ok": true
+      },
+      {
+        "name": "mixed accepted p rows modes or qPost are refused before mutation",
+        "ok": true
+      },
+      {
+        "name": "one h binds free Moreau work and geometry payload",
+        "ok": true
+      },
+      {
+        "name": "inverse mass is frozen in Sfree contactFrame and missing Minv is refused",
+        "ok": true
+      },
+      {
+        "name": "all declared exception stages restore exposed state and solverGroups",
+        "ok": true
+      },
+      {
+        "name": "onset restitution is applied once",
+        "ok": true
+      },
+      {
+        "name": "persistent contact takes ownership without restitution replay",
+        "ok": true
+      },
+      {
+        "name": "Coulomb candidate upper bound is a pure solver-domain-stop",
+        "ok": true
+      },
+      {
+        "name": "identical Sfree inputs produce identical trials",
+        "ok": true
+      }
+    ]
+  },
+  "negativeMutationTests": [
+    {
+      "mutant": "double-world-step",
+      "expectedTest": "advanceFree owns one world step, one force integration and frozen Wact",
+      "caught": true,
+      "evidence": "Error: advanceFree did not own exactly one world step"
+    },
+    {
+      "mutant": "wact-mutable",
+      "expectedTest": "advanceFree owns one world step, one force integration and frozen Wact",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: observable token.Wact is mutable"
+    },
+    {
+      "mutant": "wact-recomputed",
+      "expectedTest": "finishMaterial preserves accepted same-p rows modes qPost and ticket",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: finish recomputed or changed frozen Wact"
+    },
+    {
+      "mutant": "dual-finish",
+      "expectedTest": "one Sfree cannot finish material after structural finish",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: The input did not match the regular expression /consum|stale|finish/i. Input:"
+    },
+    {
+      "mutant": "dry-mutation",
+      "expectedTest": "dry lambda trial is deterministic and byte-pure",
+      "caught": true,
+      "evidence": "Error: dry trial mutated adapter state"
+    },
+    {
+      "mutant": "mixed-accepted",
+      "expectedTest": "finishMaterial preserves accepted same-p rows modes qPost and ticket",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: p"
+    },
+    {
+      "mutant": "split-h",
+      "expectedTest": "one h binds free Moreau work and geometry payload",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "mutant": "groups-leak",
+      "expectedTest": "advanceFree owns one world step, one force integration and frozen Wact",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "mutant": "persistent-restitution",
+      "expectedTest": "persistent contact takes ownership without restitution replay",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: persistent bias: -0.5 != 0"
+    },
+    {
+      "mutant": "truncate-domain",
+      "expectedTest": "Coulomb candidate upper bound is a pure solver-domain-stop",
+      "caught": true,
+      "evidence": "AssertionError [ERR_ASSERTION]: candidate overflow was truncated or solved"
+    }
+  ],
+  "integration": {
+    "status": "passed",
+    "path": "C:\\Users\\Administrator\\Documents\\Codex\\2026-08-10\\referenced-chatgpt-conversation-this-is-an-3\\work\\material-free-cluster-integration\\free-cluster.js",
+    "sha256": "9BD6EC52CC6BBBF0EB09B75EB5CA53F8BD23BFACDCD4897C515523BC18F9715D",
+    "conformance": {
+      "ok": true,
+      "passed": 15,
+      "failed": 0,
+      "total": 15,
+      "results": [
+        {
+          "name": "frozen source locks and signed normal/Coulomb overlap",
+          "ok": true
+        },
+        {
+          "name": "advanceFree owns one world step, one force integration and frozen Wact",
+          "ok": true
+        },
+        {
+          "name": "one Sfree cannot finish material after structural finish",
+          "ok": true
+        },
+        {
+          "name": "one Sfree cannot finish structural after material finish",
+          "ok": true
+        },
+        {
+          "name": "dry lambda trial is deterministic and byte-pure",
+          "ok": true
+        },
+        {
+          "name": "contact rows can only come from the frozen Sfree contactFrame",
+          "ok": true
+        },
+        {
+          "name": "finishMaterial preserves accepted same-p rows modes qPost and ticket",
+          "ok": true
+        },
+        {
+          "name": "mixed accepted p rows modes or qPost are refused before mutation",
+          "ok": true
+        },
+        {
+          "name": "one h binds free Moreau work and geometry payload",
+          "ok": true
+        },
+        {
+          "name": "inverse mass is frozen in Sfree contactFrame and missing Minv is refused",
+          "ok": true
+        },
+        {
+          "name": "all declared exception stages restore exposed state and solverGroups",
+          "ok": true
+        },
+        {
+          "name": "onset restitution is applied once",
+          "ok": true
+        },
+        {
+          "name": "persistent contact takes ownership without restitution replay",
+          "ok": true
+        },
+        {
+          "name": "Coulomb candidate upper bound is a pure solver-domain-stop",
+          "ok": true
+        },
+        {
+          "name": "identical Sfree inputs produce identical trials",
+          "ok": true
+        }
+      ]
+    }
+  },
+  "summary": {
+    "referencePassed": true,
+    "referenceTests": "15/15",
+    "mutantsCaught": "10/10",
+    "integrationStatus": "passed"
+  }
+}

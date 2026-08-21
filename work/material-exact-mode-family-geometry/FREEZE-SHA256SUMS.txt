@@ -1,0 +1,34 @@
+# Exact finite-rotation geometry/root chain freeze
+# Scope: work-only mathematics and prepared-root evidence.
+# PATH / OWNER / real Sfree / main / removal authority are NOT signed here.
+
+# Safety anchors (read-only; not part of this work-only implementation)
+3A58BFB55ACA173DB63435F75C7FDF19BB0F6D68D42AEABF4E77FC1A7AB2D344  outputs/bite-simulator/app.js
+06B6EC1F6E611DDD4122652DC9763D8F75129904D224ACCA3CABB1AF3D71D0AA  work/s4c-private-toi-dxf-combined/app-combined-candidate.js
+
+# Frozen sources, runners, and documentation
+9F37F457CD1F5DE6FB76680E136E3FC80900848C79A5E8B3A041D831BCF3D3CF  work/material-finite-rotation-sweep-oracle/finite-rotation-sweep-oracle.js
+5BC135F91D820C34EBBDE77CF95E829818D02F4111182620E80C5B997B40E60A  work/material-finite-rotation-sweep-oracle/run-tests.js
+9392896F4B5FA2186A5C39E66CBA104760874654E55290740691FAA9C249AAD5  work/material-finite-rotation-sweep-oracle/run-random-audit.js
+E1790A5107701127E18A9B0944EF1E1526498F548F89572052315255F1AD1A7E  work/material-finite-rotation-sweep-oracle/README.md
+EDD725432EB01E0A800647A68A6B67E74B4F2AA27A134805FAC21B2D46519EB8  work/material-kkt-mode-family-geometry/mode-family-geometry.js
+202B6B79A1302EEE07FE510DA4261D8FF01B10BF0F9F87D9B4E16A348C2F327C  work/material-kkt-mode-family-geometry/run-tests.js
+0A0793A034BDCAA5BBA0056B768617943CD56A664162CDD909F05798C6B589CF  work/material-kkt-mode-family-geometry/README.md
+BC128BAFC05397B073584D5FAF4362A7AD3F09CD91EBBFF173886AD84B43A77B  work/material-exact-triangle-sweep-area/exact-triangle-sweep-area.js
+E48A7BDA3FC2A49736F8CD90C36EAF0343E0D133739903780021A4E8CF430A37  work/material-exact-triangle-sweep-area/run-tests.js
+878C892984012451EBA64424B3C8ED61A92CFA497EE95FCC8D2183BD25D64052  work/material-exact-triangle-sweep-area/run-union-random-audit.js
+9A9D992F46F19DFF7351BFA03A6BD7D3142B6FB865F1E1244EFDE65B07026DF3  work/material-exact-triangle-sweep-area/README.md
+59E0567C0C1545A79A7759BF3379953F9A87159F619C79F8A09BA1256F45A7B0  work/material-exact-mode-family-geometry/exact-mode-family-geometry.js
+B6BFD42846B1D4ABB5BF18DEAEFAC7575DE7BE3363C77918E750DB105CCCCA54  work/material-exact-mode-family-geometry/run-tests.js
+4D755F652819D13DF082CFC40714A226A1AC73B2CCC91E2C3563F890A849B02F  work/material-exact-mode-family-geometry/run-random-audit.js
+AF40766A29B15D3FC1A70BEB3C865A6482525A57B865319457F2233A65C19B0B  work/material-exact-mode-family-geometry/run-freeze-tests.js
+7C31B623C8B043B8CC5A8B2A0A99BD665D551E2CBB64724898CB38483C3CD2A9  work/material-exact-mode-family-geometry/README.md
+385013DF70B3D40B503C9043148F573DCCB4D6EA01ECD51F040F052F5F52C447  work/material-prepared-root-integration/event-kkt-coulomb-v3.js
+66539A20804374F9703531B7490F47329AC106C1D74E97C14566901E6ADA3336  work/material-prepared-root-integration/run-v3-tests.js
+9BFE622DBC8BD14F3CE188E149D35FB94752F782EAA4424BC00E88A73FA8B8B4  work/material-prepared-root-integration/README.md
+
+# Current execution evidence. Reports containing elapsed times are execution-bound.
+641594F1300F12F02E96121209F98E8FE829CE3B303C703C986B17365207A052  work/material-exact-triangle-sweep-area/union-random-audit-report.json
+57163C2163C3092A70F23179BF9E4DBCD4A6BD1328F3DB9749F623A5AF0069FE  work/material-exact-mode-family-geometry/random-audit-report.json
+A399E05EAB65C9CC0EDE346774D496AE5F8690F971EC5F9222007497F02FF5DA  work/material-exact-mode-family-geometry/freeze-test-report.json
+174726310F4C356DC64227CE5CE9C21E91639E9C242D4E2A82BE81A41C65FAFD  work/material-prepared-root-integration/v3-test-report.json

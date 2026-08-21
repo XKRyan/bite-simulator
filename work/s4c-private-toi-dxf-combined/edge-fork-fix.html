@@ -1,0 +1,272 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>FORK FIX BOOT</title>
+<style>iframe{position:absolute;width:2px;height:2px;opacity:.01}pre{white-space:pre-wrap}</style>
+<iframe id="subject" src="index.html?qa&amp;fork-fix-subject"></iframe>
+<iframe id="control" src="index.html?qa&amp;fork-fix-control"></iframe>
+<pre id="out">PENDING</pre>
+<script>
+(() => {
+  'use strict';
+  const out = document.querySelector('#out');
+  const results = []; const failures = [];
+  const progress = (value) => { out.textContent = value; document.title = value; };
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const near = (actual, expected, tolerance, message) => {
+    if (!Number.isFinite(actual) || Math.abs(actual - expected) > tolerance) {
+      throw new Error(`${message}; actual=${actual} expected=${expected} tolerance=${tolerance}`);
+    }
+  };
+  const exact = (actual, expected, message) => {
+    const left = JSON.stringify(actual); const right = JSON.stringify(expected);
+    if (left !== right) throw new Error(`${message}; actual=${left.slice(0, 900)} expected=${right.slice(0, 900)}`);
+  };
+  const yieldTask = () => new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => { channel.port1.close(); channel.port2.close(); resolve(); };
+    channel.port2.postMessage(0);
+  });
+  const waitFor = async (predicate, label) => {
+    const deadline = performance.now() + 90000;
+    while (performance.now() < deadline) {
+      const value = predicate(); if (value) return value;
+      await yieldTask();
+    }
+    throw new Error(`timeout waiting for ${label}`);
+  };
+  const test = async (name, fn) => {
+    progress(`FORK ${results.length + 1}/4 START: ${name}`);
+    const started = performance.now();
+    try {
+      const detail = await fn();
+      results.push({ name, ok: true, durationMs: Math.round(performance.now() - started), detail });
+    } catch (error) {
+      const detail = String(error?.stack || error);
+      results.push({ name, ok: false, durationMs: Math.round(performance.now() - started), error: detail });
+      failures.push({ name, detail });
+    }
+  };
+
+  const entity = (points) => ['0', 'LWPOLYLINE', '8', 'FORK_FIX', '90', String(points.length), '70', '1', ...points.flatMap(([x, y]) => ['10', String(x), '20', String(y)])];
+  const dxf = (...entities) => ['0', 'SECTION', '2', 'ENTITIES', ...entities.flat(), '0', 'ENDSEC', '0', 'EOF'].join('\n');
+  const triangleOuter = [[-60, 0], [-60, 20], [60, 0]];
+  const offsetHole = [[-35, 4], [-25, 4], [-25, 8], [-35, 8]];
+  const triangleSolidDxf = dxf(entity(triangleOuter));
+  const triangleHoleDxf = dxf(entity(triangleOuter), entity(offsetHole));
+  const formerlyHangingDxf = dxf(
+    entity([[-40, -30], [40, -30], [40, 30], [-40, 30]]),
+    entity([[10, -10], [30, -10], [30, 10], [10, 10]]),
+  );
+
+  const polygonProperties = (pointsMm) => {
+    const points = pointsMm.map(([x, y]) => ({ x: x / 1000, y: y / 1000 }));
+    let twiceArea = 0; let centroidXNumerator = 0; let centroidYNumerator = 0; let polarNumerator = 0;
+    for (let index = 0; index < points.length; index += 1) {
+      const current = points[index]; const next = points[(index + 1) % points.length];
+      const cross = current.x * next.y - next.x * current.y;
+      twiceArea += cross;
+      centroidXNumerator += (current.x + next.x) * cross;
+      centroidYNumerator += (current.y + next.y) * cross;
+      polarNumerator += cross * (
+        current.x ** 2 + current.x * next.x + next.x ** 2
+        + current.y ** 2 + current.y * next.y + next.y ** 2
+      );
+    }
+    const signedArea = twiceArea / 2;
+    const sign = Math.sign(signedArea);
+    return {
+      area: Math.abs(signedArea),
+      centroid: { x: centroidXNumerator / (3 * twiceArea), y: centroidYNumerator / (3 * twiceArea) },
+      polarAtOrigin: sign * polarNumerator / 12,
+    };
+  };
+  const canonicalProperties = (outerPoints, holePoints = null) => {
+    const outer = polygonProperties(outerPoints); const hole = holePoints ? polygonProperties(holePoints) : null;
+    const area = outer.area - (hole?.area || 0);
+    const centroid = {
+      x: (outer.area * outer.centroid.x - (hole?.area || 0) * (hole?.centroid.x || 0)) / area,
+      y: (outer.area * outer.centroid.y - (hole?.area || 0) * (hole?.centroid.y || 0)) / area,
+    };
+    const polarAtOrigin = outer.polarAtOrigin - (hole?.polarAtOrigin || 0);
+    const centralPolarPerArea = polarAtOrigin / area - centroid.x ** 2 - centroid.y ** 2;
+    return { area, centroid, polarAtOrigin, centralPolarPerArea };
+  };
+  const solidExpected = canonicalProperties(triangleOuter);
+  const holeExpected = canonicalProperties(triangleOuter, offsetHole);
+
+  const descriptorSnapshot = (win, key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(win, key);
+    if (!descriptor) return null;
+    return {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      writable: descriptor.writable,
+      value: descriptor.value === undefined ? null : JSON.parse(JSON.stringify(descriptor.value)),
+      getter: Boolean(descriptor.get), setter: Boolean(descriptor.set),
+    };
+  };
+  const exposedSnapshot = (win) => ({
+    state: win.BiteSim.getState(),
+    metrics: win.BiteSim.getMetrics(),
+    frame: win.BiteSim.__qaCurrentFrame(),
+    trajectory: win.BiteSim.__qaTrajectoryDiagnostics(),
+    params: [...win.document.querySelectorAll('[data-param]')].map((node) => ({
+      key: node.dataset.param, value: node.value, checked: node.checked,
+      readOnly: node.readOnly, disabled: node.disabled, draft: node.dataset.numericDraft || null,
+    })),
+    eventLog: win.document.querySelector('#eventLog')?.innerHTML,
+    summary: win.document.querySelector('#fileSummary')?.textContent,
+    weaponStatus: win.document.querySelector('#weaponDrawingStatus')?.textContent,
+    shovelStatus: win.document.querySelector('#shovelDrawingStatus')?.textContent,
+    inertiaValue: win.document.querySelector('[data-param="weaponInertia"]')?.value,
+    massValue: win.document.querySelector('[data-param="weaponMass"]')?.value,
+    mlcpStats: descriptorSnapshot(win, '__MlcpV2Stats'),
+    rigReducedMass: win.BiteSim.__qaRigReducedMassAudit(),
+  });
+  const exposedText = (win) => JSON.stringify(exposedSnapshot(win));
+  const normaliseState = (state) => JSON.parse(JSON.stringify(state));
+  const compareLiveWorlds = (subject, control, label) => {
+    exact(normaliseState(subject.BiteSim.getState()), normaliseState(control.BiteSim.getState()), `${label}: state`);
+    exact(subject.BiteSim.getMetrics(), control.BiteSim.getMetrics(), `${label}: metrics`);
+    exact(subject.BiteSim.__qaCurrentFrame(), control.BiteSim.__qaCurrentFrame(), `${label}: frame`);
+    exact(subject.BiteSim.__qaRigReducedMassAudit(), control.BiteSim.__qaRigReducedMassAudit(), `${label}: reduced world audit`);
+  };
+  const restore = async (win) => { win.document.querySelector('#restoreDefaults').click(); await Promise.resolve(); };
+  const configure = (win, forkMass) => win.BiteSim.setParams({
+    contactModel: 'rigid', simulationDuration: 1, forkMass,
+    shovelMirrorX: false, shovelMirrorY: false, targetSceneX: 1000,
+  });
+  const importTimed = (win, text, filename) => {
+    const started = performance.now();
+    const report = win.BiteSim.importDxfText('shovel', text, filename);
+    const durationMs = performance.now() - started;
+    assert(durationMs < 1000, `${filename}: synchronous import exceeded 1 s (${durationMs} ms)`);
+    assert(report.sourceSha256 === 'BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B', `${filename}: source lock mismatch`);
+    assert(report.geometryFloor === 0.00008, `${filename}: geometry floor mismatch`);
+    return { report, durationMs };
+  };
+  const verifyForkProperties = (win, expected, mass, expectedColliderCount, label) => {
+    const state = win.BiteSim.getState(); const metrics = win.BiteSim.getMetrics(); const reduced = win.BiteSim.__qaRigReducedMassAudit();
+    assert(reduced.valid, `${label}: reduced audit invalid`);
+    assert(state.activeGeometry.fork.colliderCount === expectedColliderCount, `${label}: collider count ${state.activeGeometry.fork.colliderCount}`);
+    assert(state.activeGeometry.fork.zeroThickness === false, `${label}: strict fork became zero-thickness`);
+    near(state.fork.mass, mass, 1e-15, `${label}: public fork mass`);
+    near(metrics.forkMassInput, mass, 1e-15, `${label}: input fork mass`);
+    near(state.physics.massBudget.fork, mass, 1e-15, `${label}: mass budget`);
+    near(reduced.fork.mass, mass, mass * 2e-6, `${label}: Rapier mass`);
+    near(reduced.fork.localCom.x, expected.centroid.x, 2e-7, `${label}: Rapier COM x`);
+    near(reduced.fork.localCom.y, expected.centroid.y, 2e-7, `${label}: Rapier COM y`);
+    const centralInertia = mass * expected.centralPolarPerArea;
+    const pivotInertia = centralInertia + mass * (expected.centroid.x ** 2 + expected.centroid.y ** 2);
+    near(reduced.fork.comInertia, centralInertia, Math.max(1e-12, centralInertia * 3e-6), `${label}: Rapier central inertia`);
+    near(reduced.massMatrix[2][2], pivotInertia, Math.max(1e-12, pivotInertia * 3e-6), `${label}: reduced pivot inertia`);
+    assert(state.physics.traceableCuttingContinuousToiEnabled === false && state.physics.materialCuttingEnabled === false, `${label}: material deletion enabled`);
+    return {
+      mass: reduced.fork.mass,
+      localCom: reduced.fork.localCom,
+      centralInertia: reduced.fork.comInertia,
+      pivotInertia: reduced.massMatrix[2][2],
+      colliderCount: state.activeGeometry.fork.colliderCount,
+    };
+  };
+  const rejectExact = (win, text, expectedCode, name) => {
+    const before = exposedText(win); const started = performance.now(); let caught = null;
+    try { win.BiteSim.importDxfText('shovel', text, `${name}.dxf`); }
+    catch (error) { caught = { code: error?.code || null, message: String(error?.message || error) }; }
+    const durationMs = performance.now() - started;
+    assert(caught, `${name}: unexpectedly accepted`);
+    assert(caught.code === expectedCode, `${name}: expected ${expectedCode}, got ${caught.code}: ${caught.message}`);
+    assert(durationMs < 1000, `${name}: failure did not return within 1 s (${durationMs} ms)`);
+    assert(exposedText(win) === before, `${name}: exposed state/sim/history/params/inertia did not roll back exactly`);
+    return { ...caught, durationMs };
+  };
+
+  async function run() {
+    progress('FORK waiting for subject');
+    const subject = await waitFor(() => document.querySelector('#subject').contentWindow?.BiteSim && document.querySelector('#subject').contentWindow, 'subject');
+    progress('FORK waiting for control');
+    const control = await waitFor(() => document.querySelector('#control').contentWindow?.BiteSim && document.querySelector('#control').contentWindow, 'control');
+
+    await test('legal solid fork returns and uses input mass plus geometry-derived inertia', async () => {
+      await restore(subject); configure(subject, 0.03);
+      const imported = importTimed(subject, triangleSolidDxf, 'fork-triangle-solid.dxf');
+      const observed = verifyForkProperties(subject, solidExpected, 0.03, 1, 'solid');
+      return { importDurationMs: imported.durationMs, expected: solidExpected, observed };
+    });
+
+    await test('legal offset-hole fork returns; mass edit rescales automatic inertia; manual weapon inertia stays closed', async () => {
+      await restore(subject); configure(subject, 0.03);
+      const imported = importTimed(subject, triangleHoleDxf, 'fork-triangle-offset-hole.dxf');
+      const at003 = verifyForkProperties(subject, holeExpected, 0.03, 7, 'offset hole at 0.03 kg');
+      const manualInertiaBefore = subject.BiteSim.getMetrics().inertiaInput;
+      subject.BiteSim.setParams({ forkMass: 0.045, weaponInertia: 1 });
+      const at0045 = verifyForkProperties(subject, holeExpected, 0.045, 7, 'offset hole at 0.045 kg');
+      assert(subject.BiteSim.getMetrics().inertiaInput === manualInertiaBefore, 'manual weapon inertia entered while fork mass changed');
+      near(at0045.centralInertia / at003.centralInertia, 1.5, 5e-6, 'fork central inertia did not scale with input mass');
+      subject.BiteSim.advance(2000);
+      const advancedState = subject.BiteSim.getState();
+      assert(advancedState.failureDomain !== 'internal', 'accepted offset-hole fork failed during 2000-step run');
+      assert(subject.BiteSim.__qaRigReducedMassAudit().valid, 'accepted offset-hole fork lost its Rapier mass graph after 2000 steps');
+      return { importDurationMs: imported.durationMs, expected: holeExpected, at003, at0045, manualWeaponInertiaRejected: true, advancedTicks: 2000 };
+    });
+
+    await test('formerly hanging invalid fork returns with exact rollback and old world continues', async () => {
+      await restore(subject); await restore(control); configure(subject, 0.03); configure(control, 0.03);
+      subject.BiteSim.advance(43); control.BiteSim.advance(43);
+      compareLiveWorlds(subject, control, 'pre invalid import');
+      const rejected = rejectExact(subject, formerlyHangingDxf, 'DXF_REBUILD_FAILED', 'formerly-hanging-fixed-pose');
+      subject.BiteSim.advance(61); control.BiteSim.advance(61);
+      compareLiveWorlds(subject, control, 'post invalid rollback continued world');
+      return { rejected, continuedTicks: 61 };
+    });
+
+    await test('partial fork Rapier rebuild rolls back atomically and restores live handles', async () => {
+      await restore(subject); await restore(control); configure(subject, 0.03); configure(control, 0.03);
+      subject.BiteSim.advance(41); control.BiteSim.advance(41);
+      compareLiveWorlds(subject, control, 'pre partial fork rebuild');
+      const rapier = subject.BiteRapierReady ? await subject.BiteRapierReady : subject.BiteRapier;
+      const prototype = rapier.World.prototype; const original = prototype.createCollider;
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, 'createCollider');
+      assert(typeof original === 'function', 'Rapier World.createCollider unavailable');
+      const injection = { armed: true, count: 0, thrown: 0 };
+      Object.defineProperty(prototype, 'createCollider', {
+        configurable: true, enumerable: descriptor?.enumerable ?? false, writable: true,
+        value: function (...args) {
+          if (injection.armed) {
+            injection.count += 1;
+            if (injection.count === 5) {
+              injection.armed = false; injection.thrown += 1;
+              throw new Error('fork fix audit partial rebuild fault after four successful colliders');
+            }
+          }
+          return original.apply(this, args);
+        },
+      });
+      let rejected;
+      try { rejected = rejectExact(subject, triangleHoleDxf, 'DXF_REBUILD_FAILED', 'partial-fork-rebuild'); }
+      finally {
+        if (descriptor) Object.defineProperty(prototype, 'createCollider', descriptor);
+        else delete prototype.createCollider;
+      }
+      assert(injection.count === 5 && injection.thrown === 1, `partial fault mismatch: ${JSON.stringify(injection)}`);
+      subject.BiteSim.advance(61); control.BiteSim.advance(61);
+      compareLiveWorlds(subject, control, 'post partial rollback continued world');
+      return { rejected, injection, continuedTicks: 61 };
+    });
+
+    const report = {
+      pass: failures.length === 0,
+      browser: navigator.userAgent,
+      candidateSha256: 'C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9',
+      sourcePortSha256: 'BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B',
+      results, failures,
+    };
+    out.textContent = JSON.stringify(report);
+    document.title = report.pass ? 'FORK FIX PASS' : 'FORK FIX FAIL';
+  }
+  run().catch((error) => {
+    out.textContent = JSON.stringify({ pass: false, fatal: String(error?.stack || error), results, failures });
+    document.title = 'FORK FIX FATAL';
+  });
+})();
+</script>

@@ -1,0 +1,496 @@
+{
+  "schema": "real-s4d-three-mode-split-scale-v2.1-direct-report-v1",
+  "pass": true,
+  "status": "v2.1-real-three-mode-ready",
+  "fixtureSha256": "028DE291979843D5CE7B885E7A1BF44DAFBEAA18080A8E40A43688CF9DD063F1",
+  "sourcePins": {
+    "finiteRotationV2_1": "6C55302E10BC1EECB0333D8549A3A55441A5047869CAE83E920B0F6A00C58449",
+    "modeFamilyV2_1": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6",
+    "exactModeFamilyV2_1": "B6242837F332E0A86131E64DC180CFF14D7E8C6AE3374336CDF8277804F04DF1"
+  },
+  "orderedEnvelope": [
+    {
+      "index": 0,
+      "start": 0,
+      "end": 0.006268091061529087,
+      "modeKey": "fork-floor:55:+slide",
+      "modeOrdinal": 2
+    },
+    {
+      "index": 1,
+      "start": 0.006268091061529087,
+      "end": 0.0062841359917820885,
+      "modeKey": "fork-floor:55:stick",
+      "modeOrdinal": 1
+    },
+    {
+      "index": 2,
+      "start": 0.0062841359917820885,
+      "end": 0.137438953472,
+      "modeKey": "fork-floor:55:-slide",
+      "modeOrdinal": 3
+    }
+  ],
+  "modeCount": 3,
+  "commonFinalCoordinateScaleUpperBound": 0.07017917700505896,
+  "commonComputedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+  "commonTransformOperandScaleUpperBound": 0.35082008975424306,
+  "boundOwner": "EDD-v2.1 takes two independent internal maxima over all full-envelope mode measurements",
+  "kernels": [
+    {
+      "modeKey": "fork-floor:55:+slide",
+      "modeOrdinal": 2,
+      "pRange": [
+        0,
+        0.006268091061529087
+      ],
+      "measuredFinalCoordinateScaleUpperBound": 0.07004801745780066,
+      "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+      "measuredTransformOperandScaleUpperBound": 0.3507056460232389,
+      "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+      "scaleMeasurementSignature": "26E3530B70A22717474EF48694752667C7C9A7A33F88B193BE359C7A2CDCD3D0",
+      "commonFinalBound": 0.07017917700505896,
+      "commonTransformBound": 0.35082008975424306,
+      "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+      "ok": true,
+      "reason": null,
+      "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+      "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+      "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+      "pathSignature": "CDBA1C2A5D3EDE8C401634BE36E657A277CABE4D82D4F1E2698B8F05D714E4AA",
+      "lengthGuard": 4.3033596149346554e-13,
+      "polygonLengthGuard": 4.228577815034578e-13,
+      "transformLengthGuard": 7.478179990007675e-15,
+      "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+      "geometryAreaGuard": 8.607506424316472e-12,
+      "geometryReferenceArea": 0.0022400000000000002,
+      "relativeAreaCapLimit": 2.24e-11,
+      "relativeAreaCapMargin": 1.379249357568353e-11,
+      "trigProviderCertified": false,
+      "authority": "none; work-only numerical checkpoint, integrity only",
+      "productionWiring": false
+    },
+    {
+      "modeKey": "fork-floor:55:stick",
+      "modeOrdinal": 1,
+      "pRange": [
+        0.006268091061529087,
+        0.0062841359917820885
+      ],
+      "measuredFinalCoordinateScaleUpperBound": 0.07004801745780066,
+      "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+      "measuredTransformOperandScaleUpperBound": 0.3507055105425909,
+      "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+      "scaleMeasurementSignature": "272B1352CAA299698C7C3ECD5B4C2904E65E2D03CD2DC6B9D47219A11CA7097E",
+      "commonFinalBound": 0.07017917700505896,
+      "commonTransformBound": 0.35082008975424306,
+      "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+      "ok": true,
+      "reason": null,
+      "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+      "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+      "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+      "pathSignature": "F66F99F8263935B00575FFDFA7458C8BBCA508CBB97D9F01EA32F3FCA00F8814",
+      "lengthGuard": 4.3033596149346554e-13,
+      "polygonLengthGuard": 4.228577815034578e-13,
+      "transformLengthGuard": 7.478179990007675e-15,
+      "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+      "geometryAreaGuard": 8.607506424316472e-12,
+      "geometryReferenceArea": 0.0022400000000000002,
+      "relativeAreaCapLimit": 2.24e-11,
+      "relativeAreaCapMargin": 1.379249357568353e-11,
+      "trigProviderCertified": false,
+      "authority": "none; work-only numerical checkpoint, integrity only",
+      "productionWiring": false
+    },
+    {
+      "modeKey": "fork-floor:55:-slide",
+      "modeOrdinal": 3,
+      "pRange": [
+        0.0062841359917820885,
+        0.137438953472
+      ],
+      "measuredFinalCoordinateScaleUpperBound": 0.07017917700505896,
+      "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+      "measuredTransformOperandScaleUpperBound": 0.35082008975424306,
+      "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+      "scaleMeasurementSignature": "AAA5D8F5FF0919AFAAB6644DA61884BE86842A1D9879713AF661E5954C64E4CE",
+      "commonFinalBound": 0.07017917700505896,
+      "commonTransformBound": 0.35082008975424306,
+      "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+      "ok": true,
+      "reason": null,
+      "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+      "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+      "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+      "pathSignature": "ACF400826E892027FC48F796242C90AE78D49D1DD2EDEE16B943358A54B2528D",
+      "lengthGuard": 4.3033596149346554e-13,
+      "polygonLengthGuard": 4.228577815034578e-13,
+      "transformLengthGuard": 7.478179990007675e-15,
+      "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+      "geometryAreaGuard": 8.607506424316472e-12,
+      "geometryReferenceArea": 0.0022400000000000002,
+      "relativeAreaCapLimit": 2.24e-11,
+      "relativeAreaCapMargin": 1.379249357568353e-11,
+      "trigProviderCertified": false,
+      "authority": "none; work-only numerical checkpoint, integrity only",
+      "productionWiring": false
+    }
+  ],
+  "signatureCounts": {
+    "availableSuccessfulKernels": 3,
+    "canonicalGeometrySignature": 1,
+    "commonNumericalPolicySignature": 1,
+    "compositeGeometrySnapshotSignature": 1,
+    "pathSignature": 3,
+    "unavailableBecauseRelativeCapSafeStop": false
+  },
+  "relativeCapSafeStop": false,
+  "modeFamilyResult": {
+    "ok": true,
+    "descriptor": {
+      "schema": "material-kkt-mode-family-geometry-v2.1",
+      "moduleSha256": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6",
+      "parentCoulombSha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E",
+      "finiteRotationSha256": "6C55302E10BC1EECB0333D8549A3A55441A5047869CAE83E920B0F6A00C58449",
+      "pDomain": [
+        0,
+        0.137438953472
+      ],
+      "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+      "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+      "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+      "modeFamilySignature": "EF2098B4FC1D80DFE6FF71EC982D1422E2FC7CF0DB1DB24BFF2537652F85BAA0",
+      "maximumMeasuredFinalCoordinateScaleUpperBound": 0.07017917700505896,
+      "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+      "finalCoordinateScaleUpperBound": 0.07017917700505896,
+      "maximumMeasuredTransformOperandScaleUpperBound": 0.35082008975424306,
+      "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+      "transformOperandScaleUpperBound": 0.35082008975424306,
+      "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+      "scaleMeasurementSignature": "B49371F2512C1654BCCC70D61C1955013F00AF543E81F3A38F97CBBFD8EEBAC7",
+      "splitScaleBoundOwner": "two independent internal maxima over every 8B envelope mode; caller bounds forbidden; final scale is continuous discrete-path output and transform scale is intermediate-operation conditioning",
+      "trigProviderCertified": false,
+      "productionNumericalAuthority": false,
+      "intervalOracle": {
+        "schema": "signed-geometry-fresh-area-interval-v1",
+        "moduleSha256": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6",
+        "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+        "geometryLipschitzSignature": "EF2098B4FC1D80DFE6FF71EC982D1422E2FC7CF0DB1DB24BFF2537652F85BAA0"
+      },
+      "envelope": [
+        {
+          "index": 0,
+          "start": 0,
+          "end": 0.006268091061529087,
+          "modeKey": "fork-floor:55:+slide",
+          "modeOrdinal": 2,
+          "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+          "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+          "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+          "pathSignature": "CDBA1C2A5D3EDE8C401634BE36E657A277CABE4D82D4F1E2698B8F05D714E4AA",
+          "measuredFinalCoordinateScaleUpperBound": 0.07004801745780066,
+          "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+          "measuredTransformOperandScaleUpperBound": 0.3507056460232389,
+          "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+          "scaleMeasurementSignature": "26E3530B70A22717474EF48694752667C7C9A7A33F88B193BE359C7A2CDCD3D0",
+          "finalCoordinateScaleUpperBound": 0.07017917700505896,
+          "transformOperandScaleUpperBound": 0.35082008975424306,
+          "transformRoundoffDiameter": 1.4956359980015354e-14,
+          "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+          "polygonLengthGuard": 4.228577815034578e-13,
+          "transformLengthGuard": 7.478179990007675e-15,
+          "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+          "polygonOperationCount": 106,
+          "transformOperationCount": 96,
+          "transformGamma": 2.1316282072803466e-14,
+          "trigProviderCertified": false,
+          "featureAngularVelocityAffine": {
+            "intercept": 50.07997435540068,
+            "slope": -179.86595356894642
+          },
+          "materialAngularVelocityAffine": {
+            "intercept": 0,
+            "slope": -0.0025255882199941683
+          },
+          "timeChordError": 3.6982671746965e-10
+        },
+        {
+          "index": 1,
+          "start": 0.006268091061529087,
+          "end": 0.0062841359917820885,
+          "modeKey": "fork-floor:55:stick",
+          "modeOrdinal": 1,
+          "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+          "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+          "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+          "pathSignature": "F66F99F8263935B00575FFDFA7458C8BBCA508CBB97D9F01EA32F3FCA00F8814",
+          "measuredFinalCoordinateScaleUpperBound": 0.07004801745780066,
+          "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+          "measuredTransformOperandScaleUpperBound": 0.3507055105425909,
+          "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+          "scaleMeasurementSignature": "272B1352CAA299698C7C3ECD5B4C2904E65E2D03CD2DC6B9D47219A11CA7097E",
+          "finalCoordinateScaleUpperBound": 0.07017917700505896,
+          "transformOperandScaleUpperBound": 0.35082008975424306,
+          "transformRoundoffDiameter": 1.4956359980015354e-14,
+          "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+          "polygonLengthGuard": 4.228577815034578e-13,
+          "transformLengthGuard": 7.478179990007675e-15,
+          "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+          "polygonOperationCount": 106,
+          "transformOperationCount": 96,
+          "transformGamma": 2.1316282072803466e-14,
+          "trigProviderCertified": false,
+          "featureAngularVelocityAffine": {
+            "intercept": 50.058089540328936,
+            "slope": -176.3744894442369
+          },
+          "materialAngularVelocityAffine": {
+            "intercept": 0,
+            "slope": -0.0025255882199941683
+          },
+          "timeChordError": 3.53363064725382e-10
+        },
+        {
+          "index": 2,
+          "start": 0.0062841359917820885,
+          "end": 0.137438953472,
+          "modeKey": "fork-floor:55:-slide",
+          "modeOrdinal": 3,
+          "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+          "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+          "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+          "pathSignature": "ACF400826E892027FC48F796242C90AE78D49D1DD2EDEE16B943358A54B2528D",
+          "measuredFinalCoordinateScaleUpperBound": 0.07017917700505896,
+          "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+          "measuredTransformOperandScaleUpperBound": 0.35082008975424306,
+          "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+          "scaleMeasurementSignature": "AAA5D8F5FF0919AFAAB6644DA61884BE86842A1D9879713AF661E5954C64E4CE",
+          "finalCoordinateScaleUpperBound": 0.07017917700505896,
+          "transformOperandScaleUpperBound": 0.35082008975424306,
+          "transformRoundoffDiameter": 1.4956359980015354e-14,
+          "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+          "polygonLengthGuard": 4.228577815034578e-13,
+          "transformLengthGuard": 7.478179990007675e-15,
+          "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+          "polygonOperationCount": 106,
+          "transformOperationCount": 96,
+          "transformGamma": 2.1316282072803466e-14,
+          "trigProviderCertified": false,
+          "featureAngularVelocityAffine": {
+            "intercept": 50.08002383810092,
+            "slope": -179.86491323529867
+          },
+          "materialAngularVelocityAffine": {
+            "intercept": 0,
+            "slope": -0.0025255882199941683
+          },
+          "timeChordError": 3.533251366144024e-10
+        }
+      ],
+      "qOrder": [
+        "rail-pivot-vx",
+        "weapon-omega",
+        "fork-omega",
+        "target-com-vx",
+        "target-com-vy",
+        "target-omega"
+      ],
+      "authority": "none; real Sfree, path, owner and geometry authority are not supplied"
+    }
+  },
+  "exactModeFamilyResult": {
+    "ok": true,
+    "descriptor": {
+      "schema": "exact-mode-family-triangle-sweep-oracle-v1",
+      "moduleSha256": "B6242837F332E0A86131E64DC180CFF14D7E8C6AE3374336CDF8277804F04DF1",
+      "modeFamilySha256": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6",
+      "exactAreaSha256": "BC128BAFC05397B073584D5FAF4362A7AD3F09CD91EBBFF173886AD84B43A77B",
+      "pDomain": [
+        0,
+        0.137438953472
+      ],
+      "geometrySnapshotSignature": "D8F5C53CC9A891C114F5CA81F246932FD9CFC535772E3B7E32C37BBA9346FA5B",
+      "geometryLipschitzSignature": "FF08C8E0A219A4EC34BD648BCED40BB805A3D976A8A53FD73F60D17EF8B62578",
+      "intervalOracle": {
+        "schema": "signed-geometry-fresh-area-interval-v1",
+        "moduleSha256": "B6242837F332E0A86131E64DC180CFF14D7E8C6AE3374336CDF8277804F04DF1",
+        "geometrySnapshotSignature": "D8F5C53CC9A891C114F5CA81F246932FD9CFC535772E3B7E32C37BBA9346FA5B",
+        "geometryLipschitzSignature": "FF08C8E0A219A4EC34BD648BCED40BB805A3D976A8A53FD73F60D17EF8B62578"
+      },
+      "cover": {
+        "ok": true,
+        "status": "prepared-exact-triangle-cover",
+        "triangleCount": 2,
+        "exactArea": "1453843120389751904603309020933/649037107316853453566312041152512",
+        "exactFirstMomentX": "0/1",
+        "exactFirstMomentY": "0/1",
+        "exactPolarSecondMomentOrigin": "149888676286424114677563002800209444829917414490089462592359749/40439920000725959692000522630529446010455716633810858721655415373824",
+        "authority": "none-pure-mathematical-input",
+        "moduleSha256": "BC128BAFC05397B073584D5FAF4362A7AD3F09CD91EBBFF173886AD84B43A77B"
+      },
+      "baseDescriptor": {
+        "schema": "material-kkt-mode-family-geometry-v2.1",
+        "moduleSha256": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6",
+        "parentCoulombSha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E",
+        "finiteRotationSha256": "6C55302E10BC1EECB0333D8549A3A55441A5047869CAE83E920B0F6A00C58449",
+        "pDomain": [
+          0,
+          0.137438953472
+        ],
+        "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+        "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+        "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+        "modeFamilySignature": "EF2098B4FC1D80DFE6FF71EC982D1422E2FC7CF0DB1DB24BFF2537652F85BAA0",
+        "maximumMeasuredFinalCoordinateScaleUpperBound": 0.07017917700505896,
+        "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+        "finalCoordinateScaleUpperBound": 0.07017917700505896,
+        "maximumMeasuredTransformOperandScaleUpperBound": 0.35082008975424306,
+        "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+        "transformOperandScaleUpperBound": 0.35082008975424306,
+        "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+        "scaleMeasurementSignature": "B49371F2512C1654BCCC70D61C1955013F00AF543E81F3A38F97CBBFD8EEBAC7",
+        "splitScaleBoundOwner": "two independent internal maxima over every 8B envelope mode; caller bounds forbidden; final scale is continuous discrete-path output and transform scale is intermediate-operation conditioning",
+        "trigProviderCertified": false,
+        "productionNumericalAuthority": false,
+        "intervalOracle": {
+          "schema": "signed-geometry-fresh-area-interval-v1",
+          "moduleSha256": "41B1CB64449BD7585675F275856EBC7E9FC081F354AE9AC2F411283F755B40C6",
+          "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+          "geometryLipschitzSignature": "EF2098B4FC1D80DFE6FF71EC982D1422E2FC7CF0DB1DB24BFF2537652F85BAA0"
+        },
+        "envelope": [
+          {
+            "index": 0,
+            "start": 0,
+            "end": 0.006268091061529087,
+            "modeKey": "fork-floor:55:+slide",
+            "modeOrdinal": 2,
+            "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+            "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+            "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+            "pathSignature": "CDBA1C2A5D3EDE8C401634BE36E657A277CABE4D82D4F1E2698B8F05D714E4AA",
+            "measuredFinalCoordinateScaleUpperBound": 0.07004801745780066,
+            "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+            "measuredTransformOperandScaleUpperBound": 0.3507056460232389,
+            "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+            "scaleMeasurementSignature": "26E3530B70A22717474EF48694752667C7C9A7A33F88B193BE359C7A2CDCD3D0",
+            "finalCoordinateScaleUpperBound": 0.07017917700505896,
+            "transformOperandScaleUpperBound": 0.35082008975424306,
+            "transformRoundoffDiameter": 1.4956359980015354e-14,
+            "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+            "polygonLengthGuard": 4.228577815034578e-13,
+            "transformLengthGuard": 7.478179990007675e-15,
+            "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+            "polygonOperationCount": 106,
+            "transformOperationCount": 96,
+            "transformGamma": 2.1316282072803466e-14,
+            "trigProviderCertified": false,
+            "featureAngularVelocityAffine": {
+              "intercept": 50.07997435540068,
+              "slope": -179.86595356894642
+            },
+            "materialAngularVelocityAffine": {
+              "intercept": 0,
+              "slope": -0.0025255882199941683
+            },
+            "timeChordError": 3.6982671746965e-10
+          },
+          {
+            "index": 1,
+            "start": 0.006268091061529087,
+            "end": 0.0062841359917820885,
+            "modeKey": "fork-floor:55:stick",
+            "modeOrdinal": 1,
+            "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+            "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+            "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+            "pathSignature": "F66F99F8263935B00575FFDFA7458C8BBCA508CBB97D9F01EA32F3FCA00F8814",
+            "measuredFinalCoordinateScaleUpperBound": 0.07004801745780066,
+            "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+            "measuredTransformOperandScaleUpperBound": 0.3507055105425909,
+            "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+            "scaleMeasurementSignature": "272B1352CAA299698C7C3ECD5B4C2904E65E2D03CD2DC6B9D47219A11CA7097E",
+            "finalCoordinateScaleUpperBound": 0.07017917700505896,
+            "transformOperandScaleUpperBound": 0.35082008975424306,
+            "transformRoundoffDiameter": 1.4956359980015354e-14,
+            "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+            "polygonLengthGuard": 4.228577815034578e-13,
+            "transformLengthGuard": 7.478179990007675e-15,
+            "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+            "polygonOperationCount": 106,
+            "transformOperationCount": 96,
+            "transformGamma": 2.1316282072803466e-14,
+            "trigProviderCertified": false,
+            "featureAngularVelocityAffine": {
+              "intercept": 50.058089540328936,
+              "slope": -176.3744894442369
+            },
+            "materialAngularVelocityAffine": {
+              "intercept": 0,
+              "slope": -0.0025255882199941683
+            },
+            "timeChordError": 3.53363064725382e-10
+          },
+          {
+            "index": 2,
+            "start": 0.0062841359917820885,
+            "end": 0.137438953472,
+            "modeKey": "fork-floor:55:-slide",
+            "modeOrdinal": 3,
+            "canonicalGeometrySignature": "BFF2600917C8C6AE7193B0C7808AA676F2589BBBC93D2151BD2B66FCA1EBD9AF",
+            "commonNumericalPolicySignature": "7787358ACD0A1FAFDD6B58DED492017234B28DDF403543BBDF301FB538BC60D8",
+            "geometrySnapshotSignature": "74D378558410B00D3E37B819DC8C317FD345B33F47309324C5558E08254EBC4A",
+            "pathSignature": "ACF400826E892027FC48F796242C90AE78D49D1DD2EDEE16B943358A54B2528D",
+            "measuredFinalCoordinateScaleUpperBound": 0.07017917700505896,
+            "finalCoordinateScalePolicy": "remaining coordinates plus outward endpoint-component maximum inflated by a certified continuous p-derivative half-width bound",
+            "measuredTransformOperandScaleUpperBound": 0.35082008975424306,
+            "transformOperandScalePolicy": "nextUp-outward continuous p/time and transform-intermediate conservative operand bound",
+            "scaleMeasurementSignature": "AAA5D8F5FF0919AFAAB6644DA61884BE86842A1D9879713AF661E5954C64E4CE",
+            "finalCoordinateScaleUpperBound": 0.07017917700505896,
+            "transformOperandScaleUpperBound": 0.35082008975424306,
+            "transformRoundoffDiameter": 1.4956359980015354e-14,
+            "computedFinalCoordinateScaleUpperBound": 0.07017917700507394,
+            "polygonLengthGuard": 4.228577815034578e-13,
+            "transformLengthGuard": 7.478179990007675e-15,
+            "accumulatedNumericalLengthFloor": 4.3033596149346554e-13,
+            "polygonOperationCount": 106,
+            "transformOperationCount": 96,
+            "transformGamma": 2.1316282072803466e-14,
+            "trigProviderCertified": false,
+            "featureAngularVelocityAffine": {
+              "intercept": 50.08002383810092,
+              "slope": -179.86491323529867
+            },
+            "materialAngularVelocityAffine": {
+              "intercept": 0,
+              "slope": -0.0025255882199941683
+            },
+            "timeChordError": 3.533251366144024e-10
+          }
+        ],
+        "qOrder": [
+          "rail-pivot-vx",
+          "weapon-omega",
+          "fork-omega",
+          "target-com-vx",
+          "target-com-vy",
+          "target-omega"
+        ],
+        "authority": "none; real Sfree, path, owner and geometry authority are not supplied"
+      },
+      "authority": "none; Sfree, TOI, path, owner and cover completeness are not authenticated"
+    }
+  },
+  "scope": {
+    "mathematicalFixtureOnly": true,
+    "noRapierStep": true,
+    "noQWrite": true,
+    "noGeometryCommit": true,
+    "noRemoval": true,
+    "main": false,
+    "trigProviderCertified": false,
+    "authority": "none",
+    "productionWiring": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "material-free-cluster-negative-gap-regression-v1",
+  "passed": 3,
+  "total": 3,
+  "checks": [
+    {
+      "name": "persistent negative gap with stationary qFree stays stationary",
+      "ok": true
+    },
+    {
+      "name": "frozen contactFrame.Minv survives live adapter mutation",
+      "ok": true
+    },
+    {
+      "name": "missing contactFrame.Minv is refused with exact root rollback",
+      "ok": true
+    }
+  ],
+  "negativeGap": {
+    "gap": -0.002,
+    "normalBias": 0,
+    "restitutionApplied": false,
+    "qFree": [
+      0,
+      0
+    ],
+    "qPost": [
+      0,
+      0
+    ]
+  }
+}

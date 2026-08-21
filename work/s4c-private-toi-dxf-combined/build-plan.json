@@ -1,0 +1,112 @@
+{
+  "schema": "geometry-authority-bundle-build-manifest-v1",
+  "status": "awaiting-frozen-bundle",
+  "builder": {
+    "path": null,
+    "sha256": null,
+    "runtime": {
+      "name": "node",
+      "version": "v24.15.0"
+    },
+    "isolatedOutputArgument": "--qa-output-dir"
+  },
+  "buildPlan": {
+    "config": {
+      "path": "work/s4c-private-toi-dxf-combined/bundle-config.json",
+      "sha256": "34D479B9DE04BE01C6FB49004C912FA997B6EC2AEBD19C0474F375900F772622"
+    },
+    "entryId": "app238",
+    "moduleLoadOrder": [
+      "polygonClipping0157",
+      "coulombKktV2",
+      "freeClusterP0",
+      "rapierFreeClusterAdapter",
+      "materialToiWitness",
+      "geometryIntervalKernel",
+      "coulombKktV3",
+      "preparedFreeCluster",
+      "app238"
+    ],
+    "inputs": [
+      {
+        "id": "polygonClipping0157",
+        "path": "outputs/bite-simulator/assets/polygon-clipping/polygon-clipping-0.15.7.umd.min.js",
+        "sha256": "7F8619E84A86CE8DD400C9B50430E9C8CF8F26027B19EEB479F109F5C1A9D688",
+        "dependencies": []
+      },
+      {
+        "id": "coulombKktV2",
+        "path": "work/kkt-coulomb-extension/event-kkt-coulomb.js",
+        "sha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E",
+        "dependencies": []
+      },
+      {
+        "id": "freeClusterP0",
+        "path": "work/material-free-cluster-integration/free-cluster.js",
+        "sha256": "9BD6EC52CC6BBBF0EB09B75EB5CA53F8BD23BFACDCD4897C515523BC18F9715D",
+        "dependencies": [
+          "coulombKktV2"
+        ]
+      },
+      {
+        "id": "rapierFreeClusterAdapter",
+        "path": "work/material-event-integrator-design/s3-free-cluster-rapier-adapter.js",
+        "sha256": "62DE839DB92975FC008AFE8213A130D20D7E1959A7415601AD52B350AF82493E",
+        "dependencies": []
+      },
+      {
+        "id": "materialToiWitness",
+        "path": "work/material-toi-witness/material-toi-witness.js",
+        "sha256": "78F53C3ACA51678BC3BA16336E97BD6F09084AE257F7C3C558450974E28D5166",
+        "dependencies": []
+      },
+      {
+        "id": "geometryIntervalKernel",
+        "path": "work/material-geometry-interval-oracle/geometry-interval-oracle.js",
+        "sha256": "80D17447A64DE189581488EC32300DF2232A732140EC768385FC3171C7695C3C",
+        "dependencies": [
+          "polygonClipping0157"
+        ]
+      },
+      {
+        "id": "coulombKktV3",
+        "path": "work/material-prepared-root-integration/event-kkt-coulomb-v3.js",
+        "sha256": "CD79940C17A9D2BD836C4322CC0A586ED3B3237FA63E7FCF40CB9BA4D08A1035",
+        "dependencies": [
+          "coulombKktV2"
+        ]
+      },
+      {
+        "id": "preparedFreeCluster",
+        "path": "work/material-prepared-root-integration/free-cluster-prepared.js",
+        "sha256": "AE46B3E461BFD5BE7641E71FD279BB2BF56F7743BFB3137ECB36215498F691BF",
+        "dependencies": [
+          "coulombKktV2",
+          "freeClusterP0",
+          "coulombKktV3"
+        ]
+      },
+      {
+        "id": "app238",
+        "path": "work/s4c-private-toi-dxf-combined/app-combined-candidate.js",
+        "sha256": "06B6EC1F6E611DDD4122652DC9763D8F75129904D224ACCA3CABB1AF3D71D0AA",
+        "dependencies": [
+          "polygonClipping0157",
+          "coulombKktV2",
+          "freeClusterP0",
+          "rapierFreeClusterAdapter",
+          "materialToiWitness",
+          "geometryIntervalKernel",
+          "coulombKktV3",
+          "preparedFreeCluster"
+        ]
+      }
+    ]
+  },
+  "planDigest": "0250944AA850F97B4A75E46AC567B65E6EF4AABAC27FF542A53E7B087606ED30",
+  "artifact": {
+    "bundlePath": null,
+    "bundleSha256": null,
+    "candidateActualSha256": null
+  }
+}

@@ -1,0 +1,426 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Independent strict DXF browser re-audit</title>
+<style>iframe{position:absolute;width:2px;height:2px;opacity:.01}pre{white-space:pre-wrap}</style>
+<iframe id="subject" src="index.html?qa&amp;independent-final"></iframe>
+<iframe id="control" src="index.html?qa&amp;independent-control"></iframe>
+<iframe id="baseline" src="baseline-index.html?qa&amp;independent-baseline"></iframe>
+<pre id="out">PENDING</pre>
+<script>
+(() => {
+  'use strict';
+  const out = document.querySelector('#out');
+  const results = [];
+  const failures = [];
+  const progress = (value) => { out.textContent = value; document.title = value; };
+  const record = (name, ok, detail = null) => {
+    results.push({ name, ok, detail });
+    if (!ok) failures.push({ name, detail });
+    progress(`RUNNING ${results.length}/8 ${ok ? 'PASS' : 'FAIL'}: ${name}`);
+  };
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const throws = (fn, pattern, message) => {
+    let caught = null;
+    try { fn(); } catch (error) { caught = error; }
+    assert(caught, `${message}: call did not throw`);
+    assert(pattern.test(String(caught?.message || caught)), `${message}: unexpected error ${String(caught?.message || caught)}`);
+    return caught;
+  };
+  const exact = (actual, expected, message) => {
+    const left = JSON.stringify(actual); const right = JSON.stringify(expected);
+    if (left !== right) throw new Error(`${message}; actual=${left.slice(0, 900)} expected=${right.slice(0, 900)}`);
+  };
+  const near = (actual, expected, tolerance, message) => {
+    if (!Number.isFinite(actual) || Math.abs(actual - expected) > tolerance) {
+      throw new Error(`${message}; actual=${actual} expected=${expected} tolerance=${tolerance}`);
+    }
+  };
+  const delay = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
+  const yieldTask = () => new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => { channel.port1.close(); channel.port2.close(); resolve(); };
+    channel.port2.postMessage(0);
+  });
+  const test = async (name, fn) => {
+    progress(`RUNNING ${results.length + 1}/8 START: ${name}`);
+    const started = performance.now();
+    try {
+      await fn();
+      record(name, true, { durationMs: Math.round(performance.now() - started) });
+    } catch (error) {
+      record(name, false, { durationMs: Math.round(performance.now() - started), error: String(error?.stack || error) });
+    }
+  };
+  const waitFor = async (predicate, label, timeout = 90000) => {
+    const deadline = performance.now() + timeout;
+    while (performance.now() < deadline) {
+      const value = predicate();
+      if (value) return value;
+      await yieldTask();
+    }
+    throw new Error(`timeout waiting for ${label}`);
+  };
+
+  const entity = (points, options = {}) => {
+    const pairs = ['0', 'LWPOLYLINE', '8', 'INDEPENDENT', '90', String(points.length), '70', '1'];
+    if (options.elevation !== undefined) pairs.push('38', String(options.elevation));
+    if (options.width !== undefined) pairs.push('43', String(options.width));
+    points.forEach(([x, y], index) => {
+      pairs.push('10', String(x), '20', String(y));
+      if (index === 0 && options.bulge !== undefined) pairs.push('42', String(options.bulge));
+    });
+    return pairs;
+  };
+  const dxf = (...entities) => ['0', 'SECTION', '2', 'ENTITIES', ...entities.flat(), '0', 'ENDSEC', '0', 'EOF'].join('\n');
+  const square = (cx, cy, half) => [[cx - half, cy - half], [cx + half, cy - half], [cx + half, cy + half], [cx - half, cy + half]];
+  const simple = dxf(entity(square(0, 0, 30)));
+  const legalAsymmetricHole = dxf(
+    entity([[-40, -30], [40, -30], [40, 30], [-40, 30]]),
+    entity([[10, -10], [30, -10], [30, 10], [10, 10]]),
+  );
+  const balancedHole = dxf(
+    entity([[0, 0], [4, 0], [4, 3], [0, 3]]),
+    entity([[1, 1], [3, 1], [3, 2], [1, 2]]),
+  );
+  const nonPlanar = dxf(entity(square(0, 0, 30), { elevation: 1 }));
+  const bulged = dxf(entity(square(0, 0, 30), { bulge: 0.25 }));
+  const wide = dxf(entity(square(0, 0, 30), { width: 1 }));
+  const multiIsland = dxf(entity(square(-50, 0, 10)), entity(square(50, 0, 10)));
+  const nestedIsland = dxf(entity(square(0, 0, 50)), entity(square(0, 0, 30)), entity(square(0, 0, 10)));
+  const thinWall = dxf(entity(square(0, 0, 10)), entity(square(0, 0, 9.96)));
+
+  const descriptorSnapshot = (win, key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(win, key);
+    if (!descriptor) return null;
+    let value = null;
+    if (descriptor.value !== undefined) {
+      try {
+        const encoded = JSON.stringify(descriptor.value);
+        value = encoded === undefined ? String(descriptor.value) : JSON.parse(encoded);
+      } catch {
+        value = String(descriptor.value);
+      }
+    }
+    return {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      writable: descriptor.writable,
+      value,
+      getter: Boolean(descriptor.get),
+      setter: Boolean(descriptor.set),
+    };
+  };
+  const exposedSnapshot = (win) => ({
+    state: win.BiteSim.getState(),
+    metrics: win.BiteSim.getMetrics(),
+    frame: win.BiteSim.__qaCurrentFrame(),
+    trajectory: win.BiteSim.__qaTrajectoryDiagnostics(),
+    params: [...win.document.querySelectorAll('[data-param]')].map((node) => ({
+      key: node.dataset.param,
+      value: node.value,
+      checked: node.checked,
+      readOnly: node.readOnly,
+      disabled: node.disabled,
+      draft: node.dataset.numericDraft || null,
+    })),
+    eventLog: win.document.querySelector('#eventLog')?.innerHTML,
+    summary: win.document.querySelector('#fileSummary')?.textContent,
+    weaponStatus: win.document.querySelector('#weaponDrawingStatus')?.textContent,
+    shovelStatus: win.document.querySelector('#shovelDrawingStatus')?.textContent,
+    inertiaValue: win.document.querySelector('[data-param="weaponInertia"]')?.value,
+    massValue: win.document.querySelector('[data-param="weaponMass"]')?.value,
+    mlcpStats: descriptorSnapshot(win, '__MlcpV2Stats'),
+    rigReducedMass: win.BiteSim.__qaRigReducedMassAudit(),
+  });
+  const exposedText = (win) => JSON.stringify(exposedSnapshot(win));
+  const rejectExact = (win, role, text, expectedCode, name) => {
+    const before = exposedText(win);
+    let caught = null;
+    try { win.BiteSim.importDxfText(role, text, `${name}.dxf`); }
+    catch (error) { caught = { code: error?.code || null, message: String(error?.message || error) }; }
+    assert(caught, `${name} was unexpectedly accepted`);
+    if (expectedCode instanceof RegExp) assert(expectedCode.test(caught.code || ''), `${name}: ${caught.code} did not match ${expectedCode}`);
+    else assert(caught.code === expectedCode, `${name}: expected ${expectedCode}, got ${caught.code}: ${caught.message}`);
+    assert(exposedText(win) === before, `${name} did not restore exposed state/sim/history/params/inertia exactly`);
+    return caught;
+  };
+  const restore = async (win) => {
+    win.document.querySelector('#restoreDefaults').click();
+    await Promise.resolve();
+  };
+  const replaceGlobal = (win, key, value) => {
+    const descriptor = Object.getOwnPropertyDescriptor(win, key);
+    Object.defineProperty(win, key, { configurable: true, enumerable: descriptor?.enumerable ?? true, writable: true, value });
+    return () => {
+      if (descriptor) Object.defineProperty(win, key, descriptor);
+      else delete win[key];
+    };
+  };
+  const normaliseCandidateState = (value) => {
+    const clone = JSON.parse(JSON.stringify(value));
+    if (clone.cad) {
+      for (const key of ['strictImported', 'strictSourceSha256', 'geometryFloor', 'holeCount', 'triangleCount', 'netArea', 'triangulatedArea', 'coverageProof']) delete clone.cad[key];
+    }
+    return clone;
+  };
+  const compareCandidateBaseline = (candidate, baseline, label) => {
+    exact(normaliseCandidateState(candidate.BiteSim.getState()), normaliseCandidateState(baseline.BiteSim.getState()), `${label}: state`);
+    exact(candidate.BiteSim.getMetrics(), baseline.BiteSim.getMetrics(), `${label}: metrics`);
+    exact(candidate.BiteSim.__qaCurrentFrame(), baseline.BiteSim.__qaCurrentFrame(), `${label}: current frame`);
+    exact(
+      [...candidate.document.querySelectorAll('[data-param]')].map((node) => [node.dataset.param, node.value, node.checked]),
+      [...baseline.document.querySelectorAll('[data-param]')].map((node) => [node.dataset.param, node.value, node.checked]),
+      `${label}: parameter controls`,
+    );
+    assert(candidate.document.querySelector('#eventLog')?.innerHTML === baseline.document.querySelector('#eventLog')?.innerHTML, `${label}: history DOM`);
+  };
+
+  async function run() {
+    progress('BOOT waiting for subject');
+    const subject = await waitFor(() => document.querySelector('#subject').contentWindow?.BiteSim && document.querySelector('#subject').contentWindow, 'subject');
+    progress('BOOT waiting for control');
+    const control = await waitFor(() => document.querySelector('#control').contentWindow?.BiteSim && document.querySelector('#control').contentWindow, 'control');
+    progress('BOOT waiting for baseline');
+    const baseline = await waitFor(() => document.querySelector('#baseline').contentWindow?.BiteSim && document.querySelector('#baseline').contentWindow, 'S3 baseline');
+
+    await test('private IIFE is not exported and material/manual-inertia gates remain closed', async () => {
+      await restore(subject);
+      const globalNames = Object.getOwnPropertyNames(subject).filter((name) => /StrictDxf|DxfValidation|prepareSolid|parseStrict/i.test(name));
+      assert(globalNames.length === 0, `private names leaked: ${globalNames.join(', ')}`);
+      const apiNames = Object.keys(subject.BiteSim).filter((name) => /parser|triangulat|factory|strict.*port/i.test(name));
+      assert(apiNames.length === 0, `private functions leaked via BiteSim: ${apiNames.join(', ')}`);
+      assert(subject.BiteSim.__qaStrictDxf('describe') === 'strict-dxf:BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B:geometry-floor=0.00008:private-iife');
+      throws(() => subject.BiteSim.__qaStrictDxf({ command: 'fault-parser-once' }), /fixed allowed string/, 'object QA command');
+      throws(() => subject.BiteSim.__qaStrictDxf('parse'), /fixed allowed string/, 'non-allowlisted QA command');
+      let invalidRoleError = null;
+      try { subject.BiteSim.importDxfText('not-a-role', simple, 'private-probe.dxf'); } catch (error) { invalidRoleError = error; }
+      assert(invalidRoleError?.code === 'DXF_INVALID_ROLE', 'invalid role did not use strict error');
+      assert(subject[invalidRoleError.constructor.name] === undefined, 'error class was attached to window');
+      assert(!('parseStrictPlanarDxf' in invalidRoleError.constructor), 'error constructor exposed parser');
+      const initial = subject.BiteSim.getState();
+      const inertia = initial.activeGeometry.weapon.inertiaInputKgMm2;
+      subject.BiteSim.setParams({ weaponInertia: inertia * 9999 });
+      assert(subject.BiteSim.getState().activeGeometry.weapon.inertiaInputKgMm2 === inertia, 'public payload changed derived inertia');
+      const inertiaField = subject.document.querySelector('[data-param="weaponInertia"]');
+      assert(inertiaField.readOnly && inertiaField.getAttribute('aria-readonly') === 'true', 'inertia field is editable');
+      inertiaField.value = String(inertia * 1234);
+      inertiaField.dispatchEvent(new subject.Event('change', { bubbles: true }));
+      assert(subject.BiteSim.getState().activeGeometry.weapon.inertiaInputKgMm2 === inertia, 'synthetic input event admitted manual inertia');
+      assert(subject.BiteSim.getState().physics.traceableCuttingContinuousToiEnabled === false, 'material switch enabled');
+    });
+
+    await test('strict parser/topology/floor/triangulator/rebuild faults roll back complete exposed state', async () => {
+      await restore(subject);
+      subject.BiteSim.setParams({ contactModel: 'rigid', simulationDuration: 1 });
+      subject.BiteSim.advance(37);
+      rejectExact(subject, 'weapon', nonPlanar, 'DXF_NONZERO_ELEVATION', 'non-planar');
+      rejectExact(subject, 'weapon', bulged, 'DXF_UNSUPPORTED_BULGE', 'bulge');
+      rejectExact(subject, 'weapon', wide, 'DXF_NONZERO_WIDTH', 'width');
+      rejectExact(subject, 'weapon', multiIsland, 'DXF_MULTIPLE_OUTERS', 'multi-island');
+      rejectExact(subject, 'weapon', nestedIsland, 'DXF_NESTED_HOLES', 'nested-island');
+      rejectExact(subject, 'weapon', thinWall, 'DXF_FEATURE_BELOW_GEOMETRY_FLOOR', 'thin-wall');
+      for (const [command, code] of [
+        ['fault-parser-once', 'DXF_QA_PARSER_FAULT'],
+        ['fault-triangulator-once', 'DXF_QA_TRIANGULATOR_FAULT'],
+        ['fault-rebuild-once', 'DXF_QA_REBUILD_FAULT'],
+      ]) {
+        subject.BiteSim.__qaStrictDxf(command);
+        rejectExact(subject, 'weapon', simple, code, command);
+      }
+      const restoreEarcut = replaceGlobal(subject, 'earcut', undefined);
+      try { rejectExact(subject, 'weapon', simple, 'DXF_TRIANGULATOR_UNAVAILABLE', 'missing-earcut'); }
+      finally { restoreEarcut(); }
+      const clipping = subject.polygonClipping;
+      const restoreClipping = replaceGlobal(subject, 'polygonClipping', { ...clipping, intersection: null });
+      try { rejectExact(subject, 'weapon', simple, 'DXF_REBUILD_FAILED', 'missing-overlap-kernel'); }
+      finally { restoreClipping(); }
+    });
+
+    await test('browser pipeline rejects independent equal-area wrong meshes and restores exactly', async () => {
+      await restore(subject);
+      subject.BiteSim.advance(23);
+      const originalEarcut = subject.earcut;
+      let restoreEarcut = replaceGlobal(subject, 'earcut', () => [0, 1, 2, 0, 1, 3]);
+      try { rejectExact(subject, 'weapon', simple, 'DXF_TRIANGLE_OVERLAP', 'non-identical-equal-area-overlap'); }
+      finally { restoreEarcut(); }
+      const balancedWrong = [
+        0, 1, 4, 1, 5, 4,
+        4, 5, 6, 4, 6, 7,
+        2, 3, 6, 3, 7, 6,
+        3, 0, 7, 0, 4, 7,
+      ];
+      restoreEarcut = replaceGlobal(subject, 'earcut', () => balancedWrong);
+      try { rejectExact(subject, 'weapon', balancedHole, 'DXF_TRIANGLE_HOLE_COVERAGE', 'equal-area-hole-fill'); }
+      finally { restoreEarcut(); }
+      assert(subject.earcut === originalEarcut, 'Earcut authority was not restored after attacks');
+    });
+
+    await test('real partial Rapier rebuild failure restores old world and it continues bit-exact', async () => {
+      await restore(subject); await restore(control);
+      const params = { contactModel: 'rigid', simulationDuration: 1, weaponStartMode: 'setSpeed', driveStartMode: 'setSpeed' };
+      subject.BiteSim.setParams(params); control.BiteSim.setParams(params);
+      subject.BiteSim.advance(41); control.BiteSim.advance(41);
+      exact(normaliseCandidateState(subject.BiteSim.getState()), normaliseCandidateState(control.BiteSim.getState()), 'pre-injection candidate controls diverged');
+      const rapier = subject.BiteRapierReady ? await subject.BiteRapierReady : subject.BiteRapier;
+      const prototype = rapier.World.prototype;
+      const original = prototype.createCollider;
+      assert(typeof original === 'function', 'Rapier World.createCollider is not patchable for the black-box fault');
+      const originalDescriptor = Object.getOwnPropertyDescriptor(prototype, 'createCollider');
+      const injection = { armed: true, count: 0, thrown: 0 };
+      const injectedCreateCollider = function (...args) {
+        if (injection.armed) {
+          injection.count += 1;
+          if (injection.count === 5) {
+            injection.armed = false; injection.thrown += 1;
+            throw new Error('independent partial collider rebuild fault after four successful creates');
+          }
+        }
+        return original.apply(this, args);
+      };
+      Object.defineProperty(prototype, 'createCollider', {
+        configurable: true,
+        enumerable: originalDescriptor?.enumerable ?? false,
+        writable: true,
+        value: injectedCreateCollider,
+      });
+      try {
+        rejectExact(subject, 'weapon', simple, 'DXF_REBUILD_FAILED', 'partial-rapier-rebuild');
+      } finally {
+        if (originalDescriptor) Object.defineProperty(prototype, 'createCollider', originalDescriptor);
+        else delete prototype.createCollider;
+      }
+      assert(injection.count === 5 && injection.thrown === 1, `partial fault did not fire at collider 5: ${JSON.stringify(injection)}`);
+      subject.BiteSim.advance(61); control.BiteSim.advance(61);
+      exact(normaliseCandidateState(subject.BiteSim.getState()), normaliseCandidateState(control.BiteSim.getState()), 'restored old world diverged after continued stepping');
+      exact(subject.BiteSim.getMetrics(), control.BiteSim.getMetrics(), 'restored old-world metrics diverged');
+      exact(subject.BiteSim.__qaCurrentFrame(), control.BiteSim.__qaCurrentFrame(), 'restored old-world frame diverged');
+    });
+
+    await test('actual geometric initial overlap rejects with exact rollback', async () => {
+      await restore(subject);
+      const initial = subject.BiteSim.getState();
+      subject.BiteSim.setParams({
+        contactModel: 'rigid', weaponMirrorX: false, weaponMirrorY: false,
+        weaponInitialAngle: 0, weaponSceneY: 100,
+        targetSceneX: initial.weaponScene.x * 1000,
+      });
+      const configured = subject.BiteSim.getState();
+      const localTargetXmm = (configured.target.pos.x - configured.weaponScene.x) * 1000;
+      const localTargetYmm = (configured.target.pos.y - configured.weaponScene.y) * 1000;
+      const overlapping = dxf(entity(square(localTargetXmm, localTargetYmm, 5)));
+      rejectExact(subject, 'weapon', overlapping, 'DXF_INITIAL_SOLID_OVERLAP', 'actual-initial-overlap');
+    });
+
+    if (new URLSearchParams(location.search).has('prefix')) {
+      const report = {
+        pass: failures.length === 0,
+        prefixOnly: true,
+        browser: navigator.userAgent,
+        candidateSha256: 'C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9',
+        dxfParentManifestSha256: 'C1749150DF19BA54B3F95FBA733D3B7A5846923468E48498F418E23E0B7D780B',
+        sourcePortSha256: 'BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B',
+        results,
+        failures,
+      };
+      out.textContent = JSON.stringify(report);
+      document.title = report.pass ? 'PREFIX PASS' : 'PREFIX FAIL';
+      return;
+    }
+
+    await test('asymmetric legal hole has analytic area, COM, pivot I, central I, and compound colliders', async () => {
+      progress('RUNNING 6/8 A: restore defaults');
+      await restore(subject);
+      const weaponMass = 0.2; const forkMass = 0.03;
+      progress('RUNNING 6/8 B: configure analytic masses and mirrors');
+      subject.BiteSim.setParams({
+        contactModel: 'rigid', weaponMass, forkMass,
+        weaponMirrorX: false, weaponMirrorY: false,
+        shovelMirrorX: false, shovelMirrorY: false,
+      });
+      progress('RUNNING 6/8 C: import canonical weapon hole');
+      const weaponReport = subject.BiteSim.importDxfText('weapon', legalAsymmetricHole, 'analytic-weapon-hole.dxf');
+      progress('RUNNING 6/8 D: verify weapon analytic and Rapier mass properties');
+      assert(weaponReport.sourceSha256 === 'BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B');
+      assert(weaponReport.geometryFloor === 0.00008);
+      const outerArea = 0.08 * 0.06; const holeArea = 0.02 * 0.02; const area = outerArea - holeArea;
+      const centroidX = -(holeArea * 0.02) / area;
+      const polarOuter = outerArea * (0.08 ** 2 + 0.06 ** 2) / 12;
+      const polarHole = holeArea * ((0.02 ** 2 + 0.02 ** 2) / 12 + 0.02 ** 2);
+      const radiusSquaredAtPivot = (polarOuter - polarHole) / area;
+      const radiusSquaredAtCom = radiusSquaredAtPivot - centroidX ** 2;
+      let state = subject.BiteSim.getState(); let metrics = subject.BiteSim.getMetrics();
+      assert(state.cad.strictImported && state.cad.holeCount === 1 && state.cad.triangleCount > 0);
+      assert(/contained.*non-overlap.*multiplicity.*area equality/.test(state.cad.coverageProof));
+      near(state.cad.netArea, area, 1e-15, 'strict net area');
+      near(state.cad.triangulatedArea, area, 1e-15, 'strict triangulated area');
+      near(metrics.weaponMassShapeArea, area, 1e-15, 'weapon lamina area');
+      near(metrics.weaponMassShapeCentroid.x, centroidX, 1e-15, 'weapon analytic COM x');
+      near(metrics.weaponMassShapeCentroid.y, 0, 1e-15, 'weapon analytic COM y');
+      near(metrics.inertia, weaponMass * radiusSquaredAtPivot, 1e-15, 'weapon pivot inertia');
+      near(metrics.weaponComInertia, weaponMass * radiusSquaredAtCom, 1e-15, 'weapon central inertia');
+      assert(state.activeGeometry.weapon.colliderCount === state.cad.triangleCount, 'weapon compound collider count differs from proof triangles');
+      let reduced = subject.BiteSim.__qaRigReducedMassAudit();
+      assert(reduced.valid, `reduced mass audit invalid: ${JSON.stringify(reduced.observed)}`);
+      near(reduced.weapon.mass, weaponMass, weaponMass * 2e-6, 'Rapier weapon mass');
+      near(reduced.weapon.localCom.x, centroidX, 2e-7, 'Rapier weapon local COM x');
+      near(reduced.weapon.localCom.y, 0, 2e-7, 'Rapier weapon local COM y');
+      near(reduced.weapon.comInertia, weaponMass * radiusSquaredAtCom, weaponMass * radiusSquaredAtCom * 2e-6, 'Rapier weapon central inertia');
+
+      const inertiaBefore = metrics.inertiaInput;
+      progress('RUNNING 6/8 E: reject manual inertia and recompute from mass');
+      subject.BiteSim.setParams({ weaponInertia: 9.99e99 });
+      assert(subject.BiteSim.getMetrics().inertiaInput === inertiaBefore, 'manual public inertia entered after strict import');
+      subject.BiteSim.setParams({ weaponMass: 0.25, weaponInertia: 1 });
+      metrics = subject.BiteSim.getMetrics();
+      near(metrics.inertia, 0.25 * radiusSquaredAtPivot, 1e-15, 'mass edit did not recompute pivot inertia');
+      assert(metrics.inertiaInput !== 1, 'legacy/manual inertia survived mass edit');
+
+      progress('RUNNING 6/8 F: import canonical fork hole');
+      const forkReport = subject.BiteSim.importDxfText('shovel', legalAsymmetricHole, 'analytic-fork-hole.dxf');
+      progress('RUNNING 6/8 G: verify fork analytic and Rapier mass properties');
+      assert(forkReport.sourceSha256 === weaponReport.sourceSha256);
+      state = subject.BiteSim.getState(); reduced = subject.BiteSim.__qaRigReducedMassAudit();
+      assert(state.activeGeometry.fork.colliderCount === state.cad.triangleCount, 'fork collider count is not the strict triangle count');
+      assert(reduced.valid, 'reduced audit invalid after strict fork import');
+      near(reduced.fork.mass, forkMass, forkMass * 2e-6, 'Rapier fork mass');
+      near(reduced.fork.localCom.x, centroidX, 2e-7, 'Rapier fork local COM x');
+      near(reduced.fork.localCom.y, 0, 2e-7, 'Rapier fork local COM y');
+      near(reduced.fork.comInertia, forkMass * radiusSquaredAtCom, forkMass * radiusSquaredAtCom * 2e-6, 'Rapier fork central inertia');
+      assert(state.physics.traceableCuttingContinuousToiEnabled === false && !state.physics.materialCuttingEnabled, 'strict hole import enabled material deletion');
+    });
+
+    const oneSecond = async (name, params) => test(name, async () => {
+      await restore(subject); await restore(baseline);
+      subject.BiteSim.setParams(params); baseline.BiteSim.setParams(params);
+      compareCandidateBaseline(subject, baseline, `${name} initial`);
+      subject.BiteSim.advance(2000); baseline.BiteSim.advance(2000);
+      compareCandidateBaseline(subject, baseline, `${name} 1s`);
+      const state = subject.BiteSim.getState();
+      assert(state.failureDomain !== 'internal', `${name} internal failure`);
+      assert(state.physics.traceableCuttingContinuousToiEnabled === false, `${name} enabled material switch`);
+    });
+    await oneSecond('rigid built-in CAD remains bit-exact with frozen S3', { contactModel: 'rigid', simulationDuration: 1 });
+    await oneSecond('rigid parameter weapon and fork remain bit-exact with frozen S3', {
+      contactModel: 'rigid', simulationDuration: 1, paramWeaponEnabled: true, paramForkEnabled: true,
+    });
+
+    const report = {
+      pass: failures.length === 0,
+      browser: navigator.userAgent,
+      candidateSha256: 'C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9',
+      dxfParentManifestSha256: 'C1749150DF19BA54B3F95FBA733D3B7A5846923468E48498F418E23E0B7D780B',
+      sourcePortSha256: 'BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B',
+      baselineSha256: '2381261205DCF64E82439480DDF937DFCE7AD10872FF2509334900E0B63B89D7',
+      results,
+      failures,
+    };
+    out.textContent = JSON.stringify(report);
+    document.title = report.pass ? 'PASS independent strict DXF integration' : 'FAIL independent strict DXF integration';
+  }
+
+  run().catch((error) => {
+    out.textContent = JSON.stringify({ pass: false, fatal: String(error?.stack || error), results, failures });
+    document.title = 'FAIL independent strict DXF integration';
+  });
+})();
+</script>

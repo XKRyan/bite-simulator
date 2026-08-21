@@ -1,0 +1,19 @@
+{
+  "pass": true,
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0",
+  "candidateSha256": "C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9",
+  "baselineSha256": "2381261205DCF64E82439480DDF937DFCE7AD10872FF2509334900E0B63B89D7",
+  "results": [
+    {
+      "name": "rigid built-in CAD bit-exact with frozen S3",
+      "ok": true,
+      "durationMs": 12138
+    },
+    {
+      "name": "rigid parameter weapon/fork bit-exact with frozen S3",
+      "ok": true,
+      "durationMs": 761
+    }
+  ],
+  "failures": []
+}

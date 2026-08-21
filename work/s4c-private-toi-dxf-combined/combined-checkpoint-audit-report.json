@@ -1,0 +1,155 @@
+{
+  "schema": "material-private-toi-param-checkpoint-audit-v1",
+  "pass": true,
+  "checks": {
+    "sourceHashPinned": true,
+    "bundleHashPinned": true,
+    "reproducibleBundle": true,
+    "baseCheckpointUntouched": true,
+    "productionUntouched": true,
+    "planDigestPinned": true,
+    "privateToiInputPinned": true,
+    "preparedInputPinned": true,
+    "allBuildInputsPinned": true,
+    "manifestNamesExactArtifact": true,
+    "privateModuleActuallyCalled": true,
+    "noGeometryKernelCall": true,
+    "noPreparedKktEntryCall": true,
+    "candidateMainSwitchClosed": true,
+    "productionSwitchClosed": true,
+    "privateIifeNoModuleLeak": true,
+    "browserPass": true,
+    "browserSameToiFinite": true,
+    "realScopeHonest": true,
+    "soleRealAdvanceExact": true,
+    "exactTokenAndRoot": true,
+    "spatialCertificates": true,
+    "fullAuthorityStillStopped": true,
+    "attacksAndFaultsReal": true
+  },
+  "scope": {
+    "realRapier": "one fixed parameter-tip ingress; one world step and one force application",
+    "fixedWitnessCases": "real Edge/private 78F over trusted parameter-generator geometry and declared SE(2) motions; not Rapier world steps",
+    "authority": "domain-stop before hidden-trajectory authority, 80D, KKT, publication or removal"
+  },
+  "hashes": {
+    "source": "06B6EC1F6E611DDD4122652DC9763D8F75129904D224ACCA3CABB1AF3D71D0AA",
+    "bundle": "C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9",
+    "manifest": "27528C05B74BE1ACC777FF954B3104405586F48E3EC18EA2A1B596C0132853D2",
+    "plan": "3E2C3D91950E87408419A814CD93A41F202A88FC40F061514807ED14D865DB73",
+    "browser": "099C193669C060D37F0A7EBA80150662E7FE4975C69DA51E4E0303D4A672799B",
+    "rebuilt": "C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9",
+    "production": "3A58BFB55ACA173DB63435F75C7FDF19BB0F6D68D42AEABF4E77FC1A7AB2D344",
+    "base": "FA9D838EF5ECBE98448423946D253462F8C8ABC5CB792D5B430EB7A10773C82A"
+  },
+  "pins": {
+    "source": "06B6EC1F6E611DDD4122652DC9763D8F75129904D224ACCA3CABB1AF3D71D0AA",
+    "bundle": "C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9",
+    "planDigest": "0250944AA850F97B4A75E46AC567B65E6EF4AABAC27FF542A53E7B087606ED30",
+    "privateToi": "78F53C3ACA51678BC3BA16336E97BD6F09084AE257F7C3C558450974E28D5166",
+    "prepared": "AE46B3E461BFD5BE7641E71FD279BB2BF56F7743BFB3137ECB36215498F691BF",
+    "base": "FA9D838EF5ECBE98448423946D253462F8C8ABC5CB792D5B430EB7A10773C82A",
+    "production": "3A58BFB55ACA173DB63435F75C7FDF19BB0F6D68D42AEABF4E77FC1A7AB2D344"
+  },
+  "observables": {
+    "realRun": {
+      "toiStatus": "contact",
+      "contactRole": "tip",
+      "signedClosingVelocity": 2.761295277427619,
+      "maximumUnresolvedSpatialError": 1.0257885901222686e-10,
+      "acceptedRootExact": true
+    },
+    "witnessCases": [
+      {
+        "id": "tip-first",
+        "found": true,
+        "status": "contact",
+        "contactRole": "tip",
+        "featureEdgeId": "working-face",
+        "materialRingId": "polygon-0:outer",
+        "domainAction": "material-response",
+        "sameToi": {
+          "featurePointError": 0,
+          "materialPointError": 0,
+          "commonPointError": 0,
+          "signedClosingError": 0,
+          "normalMagnitudeError": 1.1102230246251565e-16
+        }
+      },
+      {
+        "id": "root-first",
+        "found": true,
+        "status": "contact",
+        "contactRole": "root",
+        "featureEdgeId": "root-edge",
+        "materialRingId": "polygon-0:outer",
+        "domainAction": "stop-non-working-boundary",
+        "sameToi": {
+          "featurePointError": 0,
+          "materialPointError": 0,
+          "commonPointError": 0,
+          "signedClosingError": 0,
+          "normalMagnitudeError": 0
+        }
+      },
+      {
+        "id": "back-edge-first",
+        "found": true,
+        "status": "contact",
+        "contactRole": "back-edge",
+        "featureEdgeId": "back-edge",
+        "materialRingId": "polygon-0:outer",
+        "domainAction": "stop-non-working-boundary",
+        "sameToi": {
+          "featurePointError": 0,
+          "materialPointError": 0,
+          "commonPointError": 0,
+          "signedClosingError": 0,
+          "normalMagnitudeError": 0
+        }
+      },
+      {
+        "id": "rotational-midstep-enter-exit",
+        "found": true,
+        "status": "contact",
+        "contactRole": "working-face",
+        "featureEdgeId": "working-face",
+        "materialRingId": "polygon-0:outer",
+        "domainAction": "material-response",
+        "sameToi": {
+          "featurePointError": 0,
+          "materialPointError": 0,
+          "commonPointError": 0,
+          "signedClosingError": 0,
+          "normalMagnitudeError": 0
+        }
+      },
+      {
+        "id": "hole-reentry",
+        "found": true,
+        "status": "contact",
+        "contactRole": "tip",
+        "featureEdgeId": "working-face",
+        "materialRingId": "polygon-0:hole-0",
+        "domainAction": "material-response",
+        "sameToi": {
+          "featurePointError": 0,
+          "materialPointError": 0,
+          "commonPointError": 0,
+          "signedClosingError": 0,
+          "normalMagnitudeError": 0
+        }
+      },
+      {
+        "id": "no-contact",
+        "found": false,
+        "status": "no-contact",
+        "contactRole": null,
+        "featureEdgeId": null,
+        "materialRingId": null,
+        "domainAction": null,
+        "sameToi": null
+      }
+    ]
+  }
+}

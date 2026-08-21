@@ -1,0 +1,115 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Independent S4c frozen-checkpoint sampler</title>
+<iframe id="candidate" style="position:fixed;left:-9000px;width:1500px;height:1000px;border:0"></iframe>
+<pre id="out">waiting</pre>
+<script>
+(() => {
+  'use strict';
+  const frame = document.getElementById('candidate');
+  const out = document.getElementById('out');
+  const wait = async (predicate, timeout = 90000) => {
+    const started = performance.now();
+    while (performance.now() - started < timeout) {
+      const value = predicate();
+      if (value) return value;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    throw new Error('independent checkpoint hook timeout');
+  };
+  const rejected = (operation) => {
+    try { operation(); return false; } catch (_) { return true; }
+  };
+  frame.addEventListener('load', async () => {
+    try {
+      const required = [
+        '__qaGeometryPathAuthorityDescribe', '__qaGeometryPathAuthorityRun',
+        '__qaGeometryPathAuthorityAttack', '__qaGeometryPathAuthorityFault',
+        '__qaGeometryPathAuthorityWitness',
+      ];
+      const api = await wait(() => {
+        const candidate = frame.contentWindow.BiteSim;
+        return candidate && required.every((name) => typeof candidate[name] === 'function')
+          ? candidate : null;
+      });
+      api.setParams({
+        paramWeaponEnabled: true,
+        paramToothCount: 1,
+        paramToothLength: 55,
+        paramToothWorkLength: 14,
+        paramToothWidth: 6,
+        paramToothPhaseDeg: 0,
+        weaponMirrorX: false,
+        weaponMirrorY: false,
+      });
+      const description = api.__qaGeometryPathAuthorityDescribe();
+      const runId = description.runScenarioIds[0];
+      const run = api.__qaGeometryPathAuthorityRun(runId);
+      const witnessCases = description.witnessCaseIds.map(
+        (id) => api.__qaGeometryPathAuthorityWitness(id),
+      );
+      const attacks = description.attackIds.map(
+        (id) => api.__qaGeometryPathAuthorityAttack(id),
+      );
+      const faults = description.faultIds.map(
+        (id) => api.__qaGeometryPathAuthorityFault(id),
+      );
+      const later = frame.contentDocument.createElement('script');
+      later.textContent = `(() => {
+        let moduleType = null; let moduleReferenceError = false;
+        let tableType = null; let tableReferenceError = false;
+        try { moduleType = typeof s4cToiModule; } catch (_) { moduleType = 'threw'; }
+        try { void s4cToiModule; } catch (error) { moduleReferenceError = error instanceof ReferenceError; }
+        try { tableType = typeof __modules; } catch (_) { tableType = 'threw'; }
+        try { void __modules; } catch (error) { tableReferenceError = error instanceof ReferenceError; }
+        window.__independentPrivateLexical = {
+          s4cToiModule: { type: moduleType, referenceError: moduleReferenceError },
+          moduleTable: { type: tableType, referenceError: tableReferenceError },
+        };
+      })();`;
+      frame.contentDocument.documentElement.appendChild(later);
+      const lexical = { ...frame.contentWindow.__independentPrivateLexical };
+      delete frame.contentWindow.__independentPrivateLexical;
+      later.remove();
+      const forbiddenNames = [
+        'createGeometryPathAuthority', 'createTrustedCompositionInstaller',
+        'createGeometryAuthorityInstallerBrand', 'makeInstallerBrand',
+        'captureLiveBindings', 'geometryPathFriendPort', 'geometryAuthorityBindings',
+        's4cToiModule', 'findEarliestTriangleMaterialWitness', '__modules', '__require',
+      ];
+      const forbidden = forbiddenNames.filter(
+        (name) => Object.hasOwn(api, name) || Object.hasOwn(frame.contentWindow, name),
+      );
+      const invalidArgumentsRejected = {
+        describeExtra: rejected(() => api.__qaGeometryPathAuthorityDescribe({})),
+        runObject: rejected(() => api.__qaGeometryPathAuthorityRun({})),
+        runExtra: rejected(() => api.__qaGeometryPathAuthorityRun(runId, {})),
+        attackExtra: rejected(() => api.__qaGeometryPathAuthorityAttack(description.attackIds[0], {})),
+        faultExtra: rejected(() => api.__qaGeometryPathAuthorityFault(description.faultIds[0], {})),
+        witnessExtra: rejected(() => api.__qaGeometryPathAuthorityWitness(description.witnessCaseIds[0], {})),
+        attackUnknown: rejected(() => api.__qaGeometryPathAuthorityAttack('unknown')),
+        faultUnknown: rejected(() => api.__qaGeometryPathAuthorityFault('unknown')),
+        witnessUnknown: rejected(() => api.__qaGeometryPathAuthorityWitness('unknown')),
+      };
+      out.textContent = JSON.stringify({
+        schema: 's4c-independent-raw-browser-v1',
+        executed: {
+          parameterPresetApplied: true,
+          baselineRunCalled: true,
+          witnessCalls: witnessCases.length,
+          attackCalls: attacks.length,
+          faultCalls: faults.length,
+        },
+        description, run, witnessCases, attacks, faults, lexical, forbidden,
+        invalidArgumentsRejected,
+      });
+    } catch (error) {
+      out.textContent = JSON.stringify({
+        schema: 's4c-independent-raw-browser-v1',
+        error: String(error && (error.stack || error)),
+      });
+    }
+  }, { once: true });
+  frame.src = `/candidate/index.html?qa=independent-s4c-${Date.now()}`;
+})();
+</script>

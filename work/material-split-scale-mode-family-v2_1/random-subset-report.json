@@ -1,0 +1,13 @@
+{
+  "schema": "exact-mode-family-rotation-random-audit-v1",
+  "pass": true,
+  "configurations": 2,
+  "intervals": 4,
+  "attemptedSamples": 20,
+  "exactSamples": 20,
+  "topologyCertified": 4,
+  "fullRange": 0,
+  "safeStops": 0,
+  "maximumRelativeWidth": 0.000005399852280374405,
+  "topologyReasons": {}
+}

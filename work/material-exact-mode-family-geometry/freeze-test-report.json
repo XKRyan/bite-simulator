@@ -1,0 +1,295 @@
+{
+  "schema": "exact-finite-rotation-freeze-tests-v1",
+  "pass": true,
+  "sourceHashes": {
+    "work/material-finite-rotation-sweep-oracle/finite-rotation-sweep-oracle.js": "9F37F457CD1F5DE6FB76680E136E3FC80900848C79A5E8B3A041D831BCF3D3CF",
+    "work/material-kkt-mode-family-geometry/mode-family-geometry.js": "EDD725432EB01E0A800647A68A6B67E74B4F2AA27A134805FAC21B2D46519EB8",
+    "work/material-exact-triangle-sweep-area/exact-triangle-sweep-area.js": "BC128BAFC05397B073584D5FAF4362A7AD3F09CD91EBBFF173886AD84B43A77B",
+    "work/material-exact-mode-family-geometry/exact-mode-family-geometry.js": "59E0567C0C1545A79A7759BF3379953F9A87159F619C79F8A09BA1256F45A7B0",
+    "work/material-prepared-root-integration/event-kkt-coulomb-v3.js": "385013DF70B3D40B503C9043148F573DCCB4D6EA01ECD51F040F052F5F52C447"
+  },
+  "runnerHashes": {
+    "work/material-finite-rotation-sweep-oracle/run-tests.js": "5BC135F91D820C34EBBDE77CF95E829818D02F4111182620E80C5B997B40E60A",
+    "work/material-kkt-mode-family-geometry/run-tests.js": "202B6B79A1302EEE07FE510DA4261D8FF01B10BF0F9F87D9B4E16A348C2F327C",
+    "work/material-prepared-root-integration/run-v3-tests.js": "66539A20804374F9703531B7490F47329AC106C1D74E97C14566901E6ADA3336",
+    "work/material-exact-triangle-sweep-area/run-tests.js": "E48A7BDA3FC2A49736F8CD90C36EAF0343E0D133739903780021A4E8CF430A37",
+    "work/material-exact-triangle-sweep-area/run-union-random-audit.js": "878C892984012451EBA64424B3C8ED61A92CFA497EE95FCC8D2183BD25D64052",
+    "work/material-exact-mode-family-geometry/run-tests.js": "B6BFD42846B1D4ABB5BF18DEAEFAC7575DE7BE3363C77918E750DB105CCCCA54"
+  },
+  "suites": {
+    "finiteRotation": {
+      "schema": "finite-rotation-sweep-oracle-tests-v1",
+      "pass": true,
+      "passed": 13,
+      "checks": [
+        {
+          "name": "module and polygon pins are live",
+          "pass": true,
+          "elapsedMs": 0
+        },
+        {
+          "name": "pure translation matches analytic swept area",
+          "pass": true,
+          "elapsedMs": 11
+        },
+        {
+          "name": "translation interval encloses dense exact samples and their guards",
+          "pass": true,
+          "elapsedMs": 184
+        },
+        {
+          "name": "finite rotation interval encloses randomized interior samples",
+          "pass": true,
+          "elapsedMs": 494
+        },
+        {
+          "name": "counter-rotation remains enclosed",
+          "pass": true,
+          "elapsedMs": 65
+        },
+        {
+          "name": "holes disconnected islands and re-entry preserve area identity",
+          "pass": true,
+          "elapsedMs": 3
+        },
+        {
+          "name": "empty current geometry is exactly empty",
+          "pass": true,
+          "elapsedMs": 1
+        },
+        {
+          "name": "recorded time-chord error encloses dense true endpoint deviations",
+          "pass": true,
+          "elapsedMs": 1
+        },
+        {
+          "name": "time refinement shrinks the discrete sweep difference",
+          "pass": true,
+          "elapsedMs": 3
+        },
+        {
+          "name": "folded or under-resolved time cells fail closed",
+          "pass": true,
+          "elapsedMs": 1
+        },
+        {
+          "name": "malformed domains and insufficient chord budgets stop safely",
+          "pass": true,
+          "elapsedMs": 2
+        },
+        {
+          "name": "uniform geometric scaling preserves normalized area",
+          "pass": true,
+          "elapsedMs": 3
+        },
+        {
+          "name": "deterministic outputs and non-authority scope remain explicit",
+          "pass": true,
+          "elapsedMs": 2
+        }
+      ],
+      "sourceSha256": "9F37F457CD1F5DE6FB76680E136E3FC80900848C79A5E8B3A041D831BCF3D3CF"
+    },
+    "modeFamily": {
+      "schema": "material-kkt-mode-family-geometry-tests-v1",
+      "pass": true,
+      "passed": 9,
+      "checks": [
+        {
+          "name": "signed module pins and six-DOF order are exact",
+          "pass": true,
+          "elapsedMs": 13
+        },
+        {
+          "name": "maximum-dissipation envelope has the four expected exact cells",
+          "pass": true,
+          "elapsedMs": 5
+        },
+        {
+          "name": "exact geometry binds the same mode and qPost at transitions",
+          "pass": true,
+          "elapsedMs": 21
+        },
+        {
+          "name": "forged endpoint trials cannot select geometry",
+          "pass": true,
+          "elapsedMs": 6
+        },
+        {
+          "name": "intervals crossing every mode transition enclose dense exact samples",
+          "pass": true,
+          "elapsedMs": 456
+        },
+        {
+          "name": "transition proof is ordered and binds every inner certificate",
+          "pass": true,
+          "elapsedMs": 12
+        },
+        {
+          "name": "wrong q dimension and incomplete p domains stop safely",
+          "pass": true,
+          "elapsedMs": 2
+        },
+        {
+          "name": "non-radial pure-rotation fold is not hidden by mode composition",
+          "pass": true,
+          "elapsedMs": 3
+        },
+        {
+          "name": "determinism and non-authority are explicit",
+          "pass": true,
+          "elapsedMs": 9
+        }
+      ],
+      "sourceSha256": "EDD725432EB01E0A800647A68A6B67E74B4F2AA27A134805FAC21B2D46519EB8"
+    },
+    "certifiedRootV3": {
+      "passed": 8,
+      "total": 8,
+      "ok": true,
+      "mutants": "12/12",
+      "solverSha256": "385013DF70B3D40B503C9043148F573DCCB4D6EA01ECD51F040F052F5F52C447",
+      "oracleSha256": "AFC2308BC648F52D529FE731D86DE78DDD5FA8912AC5BAAABD11C72600ECBAFE",
+      "reportSha256": "174726310F4C356DC64227CE5CE9C21E91639E9C242D4E2A82BE81A41C65FAFD"
+    },
+    "exactArea": {
+      "schema": "exact-triangle-sweep-area-tests-v1",
+      "pass": true,
+      "passed": 13,
+      "checks": [
+        {
+          "name": "dyadic rectangle intersection is exact",
+          "pass": true,
+          "elapsedMs": 4
+        },
+        {
+          "name": "hole-like triangulation and disjoint cells do not double count",
+          "pass": true,
+          "elapsedMs": 2
+        },
+        {
+          "name": "non-dyadic decimal input is treated as its exact binary value",
+          "pass": true,
+          "elapsedMs": 3
+        },
+        {
+          "name": "one-ulp outward conversion encloses exact thirds",
+          "pass": true,
+          "elapsedMs": 0
+        },
+        {
+          "name": "huge exact numerators and denominators convert without Infinity over Infinity",
+          "pass": true,
+          "elapsedMs": 0
+        },
+        {
+          "name": "overlapping material triangles stop instead of double counting",
+          "pass": true,
+          "elapsedMs": 0
+        },
+        {
+          "name": "overlapping sweep cells are unioned exactly instead of double counted",
+          "pass": true,
+          "elapsedMs": 2
+        },
+        {
+          "name": "triple overlaps and non-convex sweep unions retain exact area and moments",
+          "pass": true,
+          "elapsedMs": 2
+        },
+        {
+          "name": "shared boundaries are legal and contribute zero overlap area",
+          "pass": true,
+          "elapsedMs": 0
+        },
+        {
+          "name": "collinear and duplicate polygon inputs fail closed",
+          "pass": true,
+          "elapsedMs": 1
+        },
+        {
+          "name": "bow-tie and concave declared cell orders cannot be convex-hull filled",
+          "pass": true,
+          "elapsedMs": 1
+        },
+        {
+          "name": "determinism is byte exact and authority stays false",
+          "pass": true,
+          "elapsedMs": 2
+        },
+        {
+          "name": "prepared triangle cover is identity-bound and reusable",
+          "pass": true,
+          "elapsedMs": 2
+        }
+      ]
+    },
+    "exactUnionRandom": {
+      "schema": "exact-sweep-cell-union-random-audit-v1",
+      "pass": true,
+      "cases": 256,
+      "gridCellsPerCase": 256,
+      "totalRectangles": 1161,
+      "maximumUnionPieces": 24
+    },
+    "exactModeFamily": {
+      "schema": "exact-mode-family-geometry-tests-v1",
+      "pass": true,
+      "passed": 10,
+      "checks": [
+        {
+          "name": "all source pins and non-authority declarations are exact",
+          "pass": true,
+          "elapsedMs": 33
+        },
+        {
+          "name": "exact strip samples match the analytic affine area and moments",
+          "pass": true,
+          "elapsedMs": 147
+        },
+        {
+          "name": "interval bounds contain dense exact samples with shrinking width",
+          "pass": true,
+          "elapsedMs": 8320
+        },
+        {
+          "name": "v3 isolates and validates the first constitutive root without a fixed polygon guard",
+          "pass": true,
+          "elapsedMs": 13956
+        },
+        {
+          "name": "v3 can refine a finite-rotation full-range prefix into certified topology leaves",
+          "pass": true,
+          "elapsedMs": 15505
+        },
+        {
+          "name": "forged endpoint trial and cloned cover-derived payload stop safely",
+          "pass": true,
+          "elapsedMs": 20
+        },
+        {
+          "name": "folded time cells stop instead of being filled by their convex hull",
+          "pass": true,
+          "elapsedMs": 13
+        },
+        {
+          "name": "overlapping triangles and mismatched total area are rejected at construction",
+          "pass": true,
+          "elapsedMs": 9
+        },
+        {
+          "name": "rotating intervals carry a whole-interval topology proof or an explicit full-range enclosure",
+          "pass": true,
+          "elapsedMs": 192
+        },
+        {
+          "name": "determinism is byte exact",
+          "pass": true,
+          "elapsedMs": 186
+        }
+      ],
+      "sourceSha256": "59E0567C0C1545A79A7759BF3379953F9A87159F619C79F8A09BA1256F45A7B0"
+    }
+  },
+  "scope": "work-only pure math and prepared-root integration; no Sfree, TOI, path owner, main, or removal authority"
+}

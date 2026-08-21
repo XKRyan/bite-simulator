@@ -1,0 +1,106 @@
+{
+  "pass": true,
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0",
+  "candidateSha256": "C100E7FBF724448643D3CF6123EEDECF201A923321838E7B27299CFCC809A2A9",
+  "sourcePortSha256": "BE5DF7D7A2C4B5CF735073E4A653C55FD928F5E112F8F162B2E25F22327C1F1B",
+  "results": [
+    {
+      "name": "legal solid fork returns and uses input mass plus geometry-derived inertia",
+      "ok": true,
+      "durationMs": 59,
+      "detail": {
+        "importDurationMs": 17.700000002980232,
+        "expected": {
+          "area": 0.0012,
+          "centroid": {
+            "x": -0.019999999999999997,
+            "y": 0.006666666666666665
+          },
+          "polarAtOrigin": 0.0000015199999999999998,
+          "centralPolarPerArea": 0.0008222222222222223
+        },
+        "observed": {
+          "mass": 0.029999997466802597,
+          "localCom": {
+            "x": -0.019999999552965164,
+            "y": 0.006666666828095913
+          },
+          "centralInertia": 0.000024666665922268294,
+          "pivotInertia": 0.000037999997657866055,
+          "colliderCount": 1
+        }
+      }
+    },
+    {
+      "name": "legal offset-hole fork returns; mass edit rescales automatic inertia; manual weapon inertia stays closed",
+      "ok": true,
+      "durationMs": 3133,
+      "detail": {
+        "importDurationMs": 13,
+        "expected": {
+          "area": 0.0011599999999999998,
+          "centroid": {
+            "x": -0.0196551724137931,
+            "y": 0.006689655172413793
+          },
+          "polarAtOrigin": 0.0000014821733333333332,
+          "centralPolarPerArea": 0.0008466583432421723
+        },
+        "at003": {
+          "mass": 0.029999997466802597,
+          "localCom": {
+            "x": -0.019655171781778336,
+            "y": 0.006689655128866434
+          },
+          "centralInertia": 0.00002539974775572773,
+          "pivotInertia": 0.000038332064569155454,
+          "colliderCount": 7
+        },
+        "at0045": {
+          "mass": 0.04500000178813934,
+          "localCom": {
+            "x": -0.019655171781778336,
+            "y": 0.006689655128866434
+          },
+          "centralInertia": 0.0000380996243620757,
+          "pivotInertia": 0.00005749810199104921,
+          "colliderCount": 7
+        },
+        "manualWeaponInertiaRejected": true,
+        "advancedTicks": 2000
+      }
+    },
+    {
+      "name": "formerly hanging invalid fork returns with exact rollback and old world continues",
+      "ok": true,
+      "durationMs": 472,
+      "detail": {
+        "rejected": {
+          "code": "DXF_REBUILD_FAILED",
+          "message": "固定铰点与当前叉子轮廓无法在不穿过地面的前提下让前端叉尖接触 Y = 0 mm；请调整铰点 Y、叉尖距离或叉形",
+          "durationMs": 2
+        },
+        "continuedTicks": 61
+      }
+    },
+    {
+      "name": "partial fork Rapier rebuild rolls back atomically and restores live handles",
+      "ok": true,
+      "durationMs": 452,
+      "detail": {
+        "rejected": {
+          "code": "DXF_REBUILD_FAILED",
+          "message": "fork fix audit partial rebuild fault after four successful colliders",
+          "durationMs": 1.7999999970197678
+        },
+        "injection": {
+          "armed": false,
+          "count": 5,
+          "thrown": 1
+        },
+        "continuedTicks": 61
+      }
+    }
+  ],
+  "failures": []
+}

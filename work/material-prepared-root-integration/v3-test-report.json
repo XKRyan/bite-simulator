@@ -1,0 +1,60 @@
+{
+  "schema": "material-coulomb-certified-least-root-v3-qa-v1",
+  "sources": {
+    "solver": {
+      "path": "work/material-prepared-root-integration/event-kkt-coulomb-v3.js",
+      "sha256": "385013DF70B3D40B503C9043148F573DCCB4D6EA01ECD51F040F052F5F52C447"
+    },
+    "oracle": {
+      "path": "work/material-prepared-root-integration/geometry-interval-oracle-qa.js",
+      "sha256": "AFC2308BC648F52D529FE731D86DE78DDD5FA8912AC5BAAABD11C72600ECBAFE"
+    },
+    "parent": {
+      "path": "work/kkt-coulomb-extension/event-kkt-coulomb.js",
+      "sha256": "8B3058E5833E96D7C83971B6D0C234E6641D0CB98044012DFFFA5DA2268E1A3E"
+    }
+  },
+  "tests": [
+    {
+      "name": "constant analytic oracle produces a signed least-root certificate",
+      "ok": true
+    },
+    {
+      "name": "narrow earlier tangential root is found instead of the later v2 root",
+      "ok": true
+    },
+    {
+      "name": "negative stopping-endpoint residual cannot hide an interior tangential root",
+      "ok": true
+    },
+    {
+      "name": "negative stopping endpoint without an interval-certified root stops safely",
+      "ok": true
+    },
+    {
+      "name": "missing interval oracle is a safe domain stop",
+      "ok": true
+    },
+    {
+      "name": "untrusted provider module hash is refused",
+      "ok": true
+    },
+    {
+      "name": "interval bound unable to prove a range stops the domain",
+      "ok": true
+    },
+    {
+      "name": "certificate validator catches all signed-field mutants",
+      "ok": true
+    }
+  ],
+  "certificateMutants": {
+    "caught": 12,
+    "total": 12
+  },
+  "summary": {
+    "passed": 8,
+    "total": 8,
+    "ok": true
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "suite": "material-toi-witness",
+  "pass": true,
+  "testsPassed": 10,
+  "testsFailed": 0,
+  "invariants": {
+    "endpointOnlySweep": false,
+    "globalFeatureAndMultiPolygonBoundaryEnumeration": true,
+    "sameToiPoseAndTwistWitness": true,
+    "nonWorkingFirstOnsetRefusesRemoval": true,
+    "deterministicSharedVertexOwnership": true,
+    "separatingBoundaryDoesNotMaskLaterCompression": true,
+    "frozenSnapshotReplayIsPure": true
+  },
+  "results": [
+    {
+      "name": "tip-first virgin contact belongs to working face",
+      "pass": true,
+      "toi": 0.49999999995634425,
+      "role": "tip",
+      "edge": "working-face"
+    },
+    {
+      "name": "shared root vertex is owned by root edge and removal is refused",
+      "pass": true,
+      "toi": 0.4999999999781721,
+      "role": "root",
+      "edge": "root-edge"
+    },
+    {
+      "name": "back edge interior wins globally and removal is refused",
+      "pass": true,
+      "toi": 0.49999999995634425,
+      "role": "back-edge",
+      "featureFraction": 0.4166666666666667
+    },
+    {
+      "name": "rotational mid-step transient contact is found when fixed samples are clear",
+      "pass": true,
+      "toi": 0.5616852794628358,
+      "toiBracket": [
+        0.5616852790117264,
+        0.5616852794628358
+      ],
+      "fixedSampleStatuses": [
+        "no-contact",
+        "no-contact",
+        "no-contact",
+        "no-contact",
+        "no-contact",
+        "no-contact",
+        "no-contact",
+        "no-contact",
+        "no-contact"
+      ],
+      "searchNodes": 43,
+      "maximumUnresolvedSpatialError": 1.0448012595267073e-9
+    },
+    {
+      "name": "hole boundary normal points from solid into hole and contact is re-entry",
+      "pass": true,
+      "toi": 0.5333333332673647,
+      "contactClass": "re-entry",
+      "ring": "polygon-0:hole-0",
+      "normal": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    {
+      "name": "initial current-material overlap is a distinct invalid state",
+      "pass": true,
+      "status": "invalid-initial-overlap",
+      "contactClass": "initial-overlap"
+    },
+    {
+      "name": "outer normal is winding-independent",
+      "pass": true,
+      "normal": {
+        "x": -1,
+        "y": 0
+      }
+    },
+    {
+      "name": "separating old boundary does not mask later compressive non-working/working decision",
+      "pass": true,
+      "continuedToi": 0.49999999995264516,
+      "separatingPrefixSteps": 1,
+      "optOutStatus": "separating-boundary"
+    },
+    {
+      "name": "pure replay from frozen snapshot is byte stable and leaves input untouched",
+      "pass": true,
+      "snapshotHash": "65E039B5FC173F5E73A8906FD38B93FF7CC29208DD947C10ACD8D5A32946C954",
+      "resultHash": "B5E957F3C3EEE448AE1FABCB2D0483056AB53A6D6685C9F780821A1ABF726B4A",
+      "deterministicReplay": true,
+      "inputByteStable": true
+    },
+    {
+      "name": "three-dt and refinement convergence",
+      "pass": true,
+      "stepDts": [
+        0.5,
+        0.25,
+        0.125
+      ],
+      "absoluteTois": [
+        0.3333333333303017,
+        0.3333333333303017,
+        0.3333333333303017
+      ],
+      "toiBracketWidths": [
+        7.946982805151492e-8,
+        1.98651832761243e-8,
+        4.964022082276642e-9
+      ]
+    }
+  ],
+  "hashes": {
+    "material-toi-witness.js": "78F53C3ACA51678BC3BA16336E97BD6F09084AE257F7C3C558450974E28D5166",
+    "run-tests.js": "5BE4DD3A2081D1F3FAE2E55952191BB2853BCA7AF73D5AD883248BB60C2524C0",
+    "README.md": "A7742AD6021EA510448D1861B2A31A73D06BEE0401331214111DCAD4ABAB76DA"
+  }
+}
