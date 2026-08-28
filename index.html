@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101724" />
     <title>BITE LAB｜格斗机器人武器模拟</title>
-    <link rel="stylesheet" href="styles.css?v=1.1.0" />
+  <link rel="stylesheet" href="styles.css?v=1.0.2" />
   </head>
   <body>
     <div class="app-shell" id="appShell">
@@ -51,7 +51,6 @@
             </label>
             <div class="inline-action-row"><button id="applyRobotPreset" class="button primary" type="button">套用量级 + 推荐靶子</button></div>
             <p id="presetReadout" class="microcopy">1.36 kg：双 P2306 4S 降额示例；行驶默认为双 Blitz Lite 1604 2850KV + 29.16:1（4S 厂家测功基准）。</p>
-            <p id="presetMassStatus" class="parametric-warning hidden" role="status"></p>
             <p id="geometryScaleWarning" class="parametric-warning hidden" role="status"></p>
           </section>
 
@@ -179,10 +178,10 @@
                 <div class="input-wrap"><input data-param="shovelOffsetY" type="number" step="0.01" /><b>mm</b></div>
               </label>
             </div>
-            <div class="two-col">
+            <div class="two-col advanced-only">
               <label class="field">
                 <span>叉子质量 <em>转动惯量按当前 DXF / 线段几何推导</em></span>
-                <div class="input-wrap"><input data-param="forkMass" type="number" value="0.03" step="any" min="0.000001" /><b>kg</b></div>
+                <div class="input-wrap"><input data-param="forkMass" type="number" value="0.03" step="0.001" min="0.0001" /><b>kg</b></div>
               </label>
             </div>
             <div class="two-col geometry-radius-row">
@@ -239,12 +238,12 @@
             <p class="microcopy">“真实加速”从静止按功率推导的扭矩—转速包络加速；“设定初速”是理想预旋边界，会在 t=0 直接带入 ½Iω² 储能，不代表所填电机能在当前进场距离内达到它。两种模式命中后都会降速并由电机恢复。</p>
             <div class="two-col">
               <label class="field">
-                <span>武器转动惯量</span>
-                <div class="input-wrap"><input data-param="weaponInertia" type="number" step="0.001" min="0.001" /><b>kg·mm²</b></div>
+                <span>武器转动惯量 <em>质量 + 当前几何自动计算</em></span>
+                <div class="input-wrap"><input data-param="weaponInertia" type="number" step="0.001" min="0.001" readonly aria-readonly="true" /><b>kg·mm²</b></div>
               </label>
               <label class="field">
                 <span>武器旋转组件质量 <em>实测 / 等效</em></span>
-                <div class="input-wrap"><input data-param="weaponMass" type="number" step="any" min="0.000001" /><b>kg</b></div>
+                <div class="input-wrap"><input data-param="weaponMass" type="number" step="0.001" min="0.000001" /><b>kg</b></div>
               </label>
               <label class="field">
                 <span>武器电机 KV</span>
@@ -283,7 +282,7 @@
                 <div class="input-wrap"><input data-param="weaponOutputFactor" type="number" step="1" min="1" max="100" /><b>%</b></div>
               </label>
             </div>
-            <p id="weaponMassReadout" class="engineering-readout">旋转组件质量与转动惯量独立输入；求解器仅用 I ≤ mR² 检查自洽性，不会用 I/R² 自动补质量。</p>
+            <p id="weaponMassReadout" class="engineering-readout">只填写完整旋转组件质量；转动惯量会按当前 CAD/参数齿几何绕武器原点自动积分，并随换图、镜像和牙形修改实时更新。</p>
           </section>
 
           <section class="settings-group" data-collapsible>
@@ -372,8 +371,8 @@
             <label class="field wide-field">
               <span>局部接触模型</span>
               <select data-param="contactModel" id="contactModel">
-                <option value="material">有限材料安全模式（未验证接触会回滚停止，默认）</option>
-                <option value="rigid">理想刚体上限对照</option>
+                <option value="rigid">理想刚体上限对照（默认，可连续运行）</option>
+                <option value="material">有限材料研究模式（未验证接触会回滚停止）</option>
               </select>
             </label>
             <div class="two-col">
@@ -530,7 +529,7 @@
               <div class="assumption-title"><div class="small-icon" aria-hidden="true">i</div><h3>当前模型与适用边界</h3></div>
               <span class="tag">说明</span>
             </div>
-              <p><strong>当前模型：</strong>Rapier 2D 求解靶子、转子、铰接叉子与仅有水平自由度的底盘；底盘竖向和俯仰由理想地面约束。有限材料安全模式不会把未验证的完全刚体冲量当成剐蹭结果：若当前刀齿缺少已验证的连续塑性/断裂、沟槽历史与最早接触 TOI，首次承载接触会回滚到安全帧并停止。“理想刚体”仅作显式上限对照，不是有限元或断裂仿真。</p>
+              <p><strong>当前模型：</strong>Rapier 2D 求解靶子、转子、铰接叉子与仅有水平自由度的底盘；底盘竖向和俯仰由理想地面约束。默认“理想刚体上限对照”可以连续运行，但不是有限元或断裂仿真。有限材料研究模式不会把未验证的完全刚体冲量当成剐蹭结果：若当前刀齿缺少已验证的连续塑性/断裂、沟槽历史与最早接触 TOI，首次承载接触仍会回滚到安全帧并停止。</p>
           </section>
         </aside>
 
@@ -627,7 +626,7 @@
               <article class="metric-card accent-red"><span>地板恢复系数</span><strong id="floorRestitution">—</strong><small>e</small></article>
               <article class="metric-card accent-red"><span>牵引需求超限比例</span><strong id="driveSlip">—</strong><small>% · 非轮速滑移率</small></article>
             </div>
-              <div class="model-equation">Rapier 联立求解靶子自由运动、转轴武器、绕自身原点自由转动的铰接叉子、无限地面与底盘水平反冲；底盘竖向和俯仰仍是理想约束。叉子铰点位置固定在底盘上，当前没有隐藏的铰链限位、弹簧或阻尼。导入 CAD 与测试齿都不能在“有限材料”模式下静默退回完全刚体：未完成连续最早接触、有限塑性/断裂及变形后表面验证时，首次承载接触会整步回滚并标记材料模型域停止。X 向每齿进给是运动学量，不能直接替代材料切深，也不会用 1/N 人工缩放冲量。“理想刚体”仅为上限对照。</div>
+              <div class="model-equation">Rapier 联立求解靶子自由运动、转轴武器、绕自身原点自由转动的铰接叉子、无限地面与底盘水平反冲；底盘竖向和俯仰仍是理想约束。叉子铰点位置固定在底盘上，当前没有隐藏的铰链限位、弹簧或阻尼。默认运行“理想刚体上限对照”。导入 CAD 与测试齿都不能在用户主动选择的“有限材料研究模式”下静默退回完全刚体：未完成连续最早接触、有限塑性/断裂及变形后表面验证时，首次承载接触会整步回滚并标记材料模型域停止。X 向每齿进给是运动学量，不能直接替代材料切深，也不会用 1/N 人工缩放冲量。</div>
           </section>
 
           <section class="event-section">
@@ -684,11 +683,11 @@
           <div><dt>CAD 与测试几何</dt><dd>叉子和武器各自独立选择当前 DXF 或“测试叉面 / 测试齿形”，因此共有四种组合。测试开关不删除已导入图纸，关闭即恢复；测试齿用“齿尖半径 + 直线迎击面 + 三角背撑”定义有限实体，测试叉严格是一条理想无厚度线段。叉子质量显式输入，测试线叉的质心与惯量按均匀细杆计算。</dd></div>
           <div><dt>靶子轴向</dt><dd>靶子长度沿 X，厚度沿 Y。等效支撑间隙只定义靶子的持续支撑包络；叉子接触的真实地面仍固定为 Y = 0 mm。</dd></div>
           <div><dt>整体运动</dt><dd>凹形 DXF 使用真实闭合边界，不用凸包填平牙谷；铰接叉子、转轴武器、靶子与无限地面由 Rapier 2D 自适应子步联立求解。叉子 X/Y 只定位铰点，叉身在重力与接触下自由转动；当前没有隐藏铰链限位或阻尼。底盘只有水平自由度，竖向与俯仰由理想地面约束，不能据此判断整机起跳或载荷转移。</dd></div>
-          <div><dt>局部材料接触</dt><dd>导入 CAD 与测试齿当前均采用非穿透零删料边界；h_min / Gc 可以记录，但连续“最早压缩接触 → 材料删除 → 余步重演”尚未通过收敛验证，因此安全门不会输出切削量或切屑体积。测试齿的直线迎击面、牙长和背撑会参与真实刚体几何接触，但不被冒充为已验证的材料去除模型。</dd></div>
+          <div><dt>局部材料接触</dt><dd>默认理想刚体上限对照采用非穿透零删料边界并连续计算。h_min / Gc 可以记录，但连续“最早压缩接触 → 材料删除 → 余步重演”尚未通过收敛验证；用户主动选择有限材料研究模式时，安全门不会输出切削量或切屑体积。测试齿的直线迎击面、牙长和背撑会参与真实刚体几何接触，但不被冒充为已验证的材料去除模型。</dd></div>
           <div><dt>收敛与回放</dt><dd>未来若启用连续材料删除，必须在同一固定时间步用相邻两档子步重复求解，删料、材料功、接触身份和终态任一不收敛都要回滚并停止；当前正式路径不会尝试删料。播放前先生成固定步长轨迹，播放、单步和进度条只读取已完成帧。</dd></div>
         </dl>
           <p class="microcopy">武器与行驶均按所选“真实加速 / 设定初速”模式起步。“高级参数（仅显示）”只展开或收起输入，不重置时间，也不切换求解律：已填的效率、有效输出系数、折扣、抓地、相电流限值、摩擦修正、恢复系数和刚体上限能量系数始终参与同一物理模型。0 A 表示没有可核验的相电流上限，不施加人为电流限矩；厂家桨测的电池侧电流不会被当作相电流。</p>
-        <p class="microcopy">武器碰撞使用严格解析的单一外环减孔实体；孔与内圆保留为空腔边界，不会被三角化填实。开放轮廓、多个独立外环、自交或非平面几何会被拒绝。若未来材料去除通过连续接触与收敛验证并被启用，只能归因于图纸识别出的真实迎击牙瓣；当前零删料路径不会删除材料。预测距离只作接近查询，正间隙不施力、不计命中或 bite。</p>
+        <p class="microcopy">武器碰撞使用已解析 DXF 的最大闭合外轮廓；孔、内圆与未闭合构造线不参与实体碰撞。若未来材料去除通过连续接触与收敛验证并被启用，只能归因于图纸识别出的真实迎击牙瓣；当前零删料路径不会删除材料。预测距离只作接近查询，正间隙不施力、不计命中或 bite。</p>
         <p class="microcopy">局部材料模型是二维工程估算，不追踪裂纹扩展、刀刃磨损、温升、三维弯曲或应变率完整本构；材料功也不能直接解读为最终裂纹长度、真实损伤或赛场安全结论。刚体上限尤其不应作为真实击飞预测。</p>
         <button class="button primary" data-close-modal type="button">继续调参</button>
       </section>
@@ -699,6 +698,6 @@
     <script src="assets/polygon-clipping/polygon-clipping-0.15.7.umd.min.js"></script>
     <script src="assets/earcut/earcut-3.2.3.min.js"></script>
     <script src="assets/rapier/rapier-loader-0.20.0.global.js"></script>
-    <script src="app.js?v=1.1.0"></script>
+  <script src="app.js?v=1.0.2"></script>
   </body>
 </html>
