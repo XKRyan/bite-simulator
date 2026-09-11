@@ -1,0 +1,406 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>continuous material scrape QA</title>
+<iframe id="app" style="position:fixed;inset:0;width:100%;height:100%;border:0"></iframe>
+<pre id="out">waiting</pre>
+<script>
+(() => {
+  'use strict';
+  const query = new URLSearchParams(location.search);
+  const suite = query.get('suite') || 'baseline';
+  const weapon = query.get('weapon') || 'param';
+  const fork = query.get('fork') || 'cad';
+  const teeth = Math.max(1, Math.floor(Number(query.get('teeth') || 20)));
+  const ratio = Number(query.get('ratio') || .5);
+  const angle = Number(query.get('angle') || 90);
+  const horizon = Number(query.get('horizon') || .75);
+  const fixedDtMs = Number(query.get('fixedDtMs') || .5);
+  const failureInjection = query.get('failureInjection') === '1';
+  const variant = query.get('variant') || 'normal';
+  const transactionCase = suite === 'rollback' || failureInjection;
+  const frame = document.querySelector('#app');
+  const out = document.querySelector('#out');
+  frame.src = `../outputs/bite-simulator/index.html?qa=continuous-material-scrape&fixedDtMs=${encodeURIComponent(fixedDtMs)}`;
+
+  const finite = value => Number.isFinite(Number(value));
+  const nearly = (a, b, tolerance) => finite(a) && finite(b) && Math.abs(Number(a) - Number(b)) <= tolerance;
+  const maximum = values => Math.max(0, ...values.filter(finite).map(Number));
+  const clone = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  const stable = value => JSON.stringify(value, (_, entry) => {
+    if (entry instanceof Set) return [...entry].sort();
+    if (entry instanceof Map) return [...entry.entries()].sort(([a], [b]) => String(a).localeCompare(String(b)));
+    return entry;
+  });
+
+  function geometryArea(geometry) {
+    const ringArea = ring => {
+      if (!Array.isArray(ring) || ring.length < 3) return 0;
+      let twice = 0;
+      for (let index = 0; index < ring.length; index += 1) {
+        const current = ring[index]; const next = ring[(index + 1) % ring.length];
+        twice += Number(current[0]) * Number(next[1]) - Number(current[1]) * Number(next[0]);
+      }
+      return Math.abs(twice) / 2;
+    };
+    return (geometry || []).reduce((total, polygon) => {
+      if (!Array.isArray(polygon) || !polygon.length) return total;
+      return total + ringArea(polygon[0]) - polygon.slice(1).reduce((sum, ring) => sum + ringArea(ring), 0);
+    }, 0);
+  }
+
+  function starDxf(count) {
+    const points = [];
+    if (count === 1) {
+      const segments = 48; const toothIndex = segments / 2;
+      for (let index = 0; index < segments; index += 1) {
+        const theta = 2 * Math.PI * index / segments;
+        const radius = index === toothIndex ? 55 : 42;
+        points.push([radius * Math.cos(theta), radius * Math.sin(theta)]);
+      }
+    } else {
+      const pitch = 2 * Math.PI / count;
+      for (let index = 0; index < count; index += 1) {
+        const centre = Math.PI + index * pitch;
+        points.push(
+          [42 * Math.cos(centre - pitch * .34), 42 * Math.sin(centre - pitch * .34)],
+          [55 * Math.cos(centre), 55 * Math.sin(centre)],
+          [42 * Math.cos(centre + pitch * .34), 42 * Math.sin(centre + pitch * .34)],
+        );
+      }
+    }
+    const entities = points.flatMap(([x, y]) => ['10', x.toFixed(9), '20', y.toFixed(9)]).join('\n');
+    return `0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nLWPOLYLINE\n100\nAcDbPolyline\n90\n${points.length}\n70\n1\n${entities}\n0\nENDSEC\n0\nEOF\n`;
+  }
+
+  function worldBytesEqual(left, right) {
+    if (!left || !right || left.length !== right.length) return false;
+    for (let index = 0; index < left.length; index += 1) if (left[index] !== right[index]) return false;
+    return true;
+  }
+
+  function rollbackComparable(capture) {
+    return {
+      bodies: capture?.bodies,
+      bodyVector: capture?.bodyVector,
+      momentum: capture?.momentum,
+      mechanicalEnergy: capture?.mechanicalEnergy,
+      damage: capture?.damage,
+      materialStats: capture?.materialStats,
+      materialTransients: capture?.materialTransients,
+      bookkeeping: capture?.bookkeeping,
+      colliderSolverGroups: capture?.colliderSolverGroups,
+      targetBody: capture?.targetBody,
+    };
+  }
+
+  function evaluateToi(events) {
+    const failures = [];
+    let previousTick = null; let previousFraction = -Infinity;
+    for (const event of events) {
+      const toi = event.toiAudit;
+      if (!toi || toi.method !== 'continuous-compressive-root') {
+        failures.push({ sequence: event.sequence, reason: 'missing continuous-compressive-root audit' });
+        continue;
+      }
+      const candidates = (toi.candidateFractions || []).filter(finite).map(Number);
+      const selected = Number(toi.selectedFraction);
+      const compressive = (toi.compressiveCandidateFractions || candidates).filter(finite).map(Number);
+      if (!compressive.length || !finite(selected)) failures.push({ sequence: event.sequence, reason: 'missing compressive candidates/selection' });
+      else if (Math.abs(selected - Math.min(...compressive)) > 1e-9) failures.push({ sequence: event.sequence, reason: 'not earliest compressive candidate' });
+      if (selected < -1e-12 || selected > 1 + 1e-12) failures.push({ sequence: event.sequence, reason: 'fraction out of range' });
+      if (toi.remainderReplayed !== true) failures.push({ sequence: event.sequence, reason: 'remainder not replayed' });
+      if (event.fixedTick === previousTick && selected + 1e-12 < previousFraction) failures.push({ sequence: event.sequence, reason: 'TOI order regressed within tick' });
+      previousTick = event.fixedTick; previousFraction = selected;
+    }
+    return { pass: events.length > 0 && failures.length === 0, failures };
+  }
+
+  function evaluateLedgers(events) {
+    const failures = [];
+    for (const event of events) {
+      const momentum = event.momentumLedger;
+      if (!momentum || !Array.isArray(momentum.residual) || !finite(momentum.tolerance)) {
+        failures.push({ sequence: event.sequence, kind: 'momentum', reason: 'missing closed momentum ledger' });
+      } else if (momentum.residual.some((value, axis) => {
+        const coordinateTolerance = Array.isArray(momentum.toleranceByCoordinate)
+          ? Number(momentum.toleranceByCoordinate[axis])
+          : Number(momentum.tolerance);
+        return !finite(coordinateTolerance) || Math.abs(Number(value)) > coordinateTolerance + 1e-15;
+      })) {
+        failures.push({ sequence: event.sequence, kind: 'momentum', reason: 'residual exceeds tolerance' });
+      }
+      const energy = event.energyLedger;
+      if (!energy || !finite(energy.residual) || !finite(energy.tolerance)) {
+        failures.push({ sequence: event.sequence, kind: 'energy', reason: 'missing phase-separated energy ledger' });
+      } else {
+        if (Math.abs(Number(energy.residual)) > Number(energy.tolerance) + 1e-15) failures.push({ sequence: event.sequence, kind: 'energy', reason: 'residual exceeds tolerance' });
+        if (Number(energy.materialDissipation) < -1e-15) failures.push({ sequence: event.sequence, kind: 'energy', reason: 'negative material dissipation' });
+        if (Number(energy.numericalEnergyGain || 0) > Number(energy.tolerance) + 1e-15) failures.push({ sequence: event.sequence, kind: 'energy', reason: 'numerical energy gain' });
+      }
+    }
+    return { pass: events.length > 0 && failures.length === 0, failures };
+  }
+
+  async function run() {
+    const api = frame.contentWindow.BiteSim;
+    const audit = frame.contentWindow.__ContinuousMaterialAudit;
+    if (!api || !audit) throw new Error('continuous material audit instrumentation unavailable');
+
+    if (weapon === 'cad') api.importDxfText('weapon', starDxf(teeth), `qa-closed-${teeth}-tooth.dxf`);
+    api.setParams({
+      contactModel: 'material',
+      paramWeaponEnabled: weapon === 'param',
+      paramToothCount: teeth,
+      paramToothPhaseDeg: 0,
+      paramToothLength: 55,
+      paramToothWorkLength: 14,
+      paramToothWidth: 6,
+      paramForkEnabled: fork === 'param',
+      paramForkTipDistance: 72,
+      shovelZOffset: 0,
+      weaponGearRatio: ratio,
+      weaponInitialAngle: angle,
+      weaponStartMode: 'realAcceleration',
+      weaponThrottle: 100,
+      driveStartMode: 'realAcceleration',
+      driveThrottle: 100,
+      targetMinChipThickness: .05,
+      targetMinChipSource: 'QA fixture declaration: h_min=0.05 mm',
+      targetFractureEnergy: 4000,
+      targetFractureSource: 'QA fixture declaration: Gc=4000 J/m2',
+      simulationDuration: horizon,
+    });
+    audit.setFailureInjection(failureInjection);
+
+    let state = api.getState();
+    const initialAudit = audit.capture(false);
+    const materialMassGeometry = material => material.massGeometry?.length
+      ? material.massGeometry
+      : material.geometry;
+    const initialArea = geometryArea(materialMassGeometry(state.material));
+    const areaTolerance = Math.max(1e-12, initialArea * 1e-8);
+    // Rapier may report zero cached mass before its first world step. The
+    // production material mass property is the authoritative initial value;
+    // subsequent samples must use the live body mass after cuts/rebuilds.
+    const initialMass = Number(initialAudit.targetBody?.mass) > 0
+      ? Number(initialAudit.targetBody.mass)
+      : Number(initialAudit.initialTargetMaterialMass);
+    const initialVolume = initialArea * Number(initialAudit.effectiveWeaponZOverlap || 0);
+    const volumeTolerance = Math.max(1e-15, initialVolume * 1e-8);
+    const massTolerance = Math.max(1e-10, Math.abs(initialMass) * 1e-8);
+    const monotonicFailures = [];
+    const areaIdentityFailures = [];
+    const deformationIdentityFailures = [];
+    const acceptedPeak = { floor: 0, forkFloor: 0, fork: 0, weapon: 0 };
+    const rejectedPeak = { floor: 0, forkFloor: 0, fork: 0, weapon: 0 };
+    const acceptedEvents = [];
+    const impacts = [];
+    let lastImpactSignature = '';
+    let previous = { state, audit: initialAudit, remainingArea: initialArea };
+    let rollbackBefore = null; let rollbackAfter = null;
+    let checkpoint = null; let ticks = 0;
+    const fixedDt = Number(state.trajectory?.fixedStep || fixedDtMs / 1000);
+    const maxTicks = Math.ceil(horizon / fixedDt) + 4;
+
+    while (ticks < maxTicks && state.time < horizon - fixedDt / 2
+      && !state.physics.solverDomainStopped && !state.physics.modelDomainStopped) {
+      const preTick = transactionCase ? audit.capture(true) : audit.capture(false);
+      const preFired = audit.failureInjectionStatus().fired;
+      api.advance(1); ticks += 1;
+      state = api.getState();
+      const postTick = audit.capture(transactionCase && (state.physics.modelDomainStopped || state.physics.solverDomainStopped));
+      const postFired = audit.failureInjectionStatus().fired;
+      if (postFired > preFired) rollbackBefore = preTick;
+      if (rollbackBefore && (state.physics.modelDomainStopped || state.physics.solverDomainStopped)) rollbackAfter = postTick;
+
+      for (const role of Object.keys(acceptedPeak)) {
+        acceptedPeak[role] = Math.max(acceptedPeak[role], Number(state.physics.maxAcceptedPenetration?.[role]) || 0);
+        rejectedPeak[role] = Math.max(rejectedPeak[role], Number(state.physics.maxRejectedPenetration?.[role]) || 0);
+      }
+      const remainingArea = geometryArea(materialMassGeometry(state.material));
+      const boundaryArea = geometryArea(state.material.geometry);
+      const deformationGeometryArea = geometryArea(state.material.deformationGeometry || []);
+      const geometricDeformedArea = Math.max(0, remainingArea - boundaryArea);
+      const removedArea = Number(state.material.removedArea);
+      if (remainingArea > previous.remainingArea + areaTolerance) monotonicFailures.push({ tick: ticks, field: 'remainingArea', previous: previous.remainingArea, current: remainingArea });
+      for (const field of ['removedArea', 'removedVolume', 'removedMass']) {
+        if (Number(state.material[field]) + (field === 'removedArea' ? areaTolerance : 1e-15) < Number(previous.state.material[field])) {
+          monotonicFailures.push({ tick: ticks, field, previous: previous.state.material[field], current: state.material[field] });
+        }
+      }
+      const deltaRemoved = removedArea - Number(previous.state.material.removedArea);
+      const deltaRemaining = previous.remainingArea - remainingArea;
+      if (Math.abs(deltaRemoved - deltaRemaining) > areaTolerance) areaIdentityFailures.push({ tick: ticks, deltaRemoved, deltaRemaining });
+      if (Math.abs(removedArea - (initialArea - remainingArea)) > areaTolerance) areaIdentityFailures.push({ tick: ticks, removedArea, geometricComplement: initialArea - remainingArea });
+      if (Math.abs(deformationGeometryArea - geometricDeformedArea) > areaTolerance) {
+        deformationIdentityFailures.push({ tick: ticks, deformationGeometryArea, geometricDeformedArea });
+      }
+      if (Number.isFinite(Number(state.material.deformedArea))
+        && Math.abs(Number(state.material.deformedArea) - geometricDeformedArea) > areaTolerance) {
+        deformationIdentityFailures.push({ tick: ticks, reported: Number(state.material.deformedArea), geometricDeformedArea });
+      }
+
+      if (Number(state.material.version) > Number(previous.state.material.version)) {
+        const newCuts = (postTick.damage?.cuts || []).filter(cut => Number(cut.version || 0) > Number(previous.state.material.version));
+        if (newCuts.length) acceptedEvents.push(...newCuts.map(clone));
+        else acceptedEvents.push({ sequence: acceptedEvents.length, missingTransactionalCutEvent: true, version: state.material.version });
+      }
+      if (state.lastImpact) {
+        const signature = stable(state.lastImpact);
+        if (signature !== lastImpactSignature) { lastImpactSignature = signature; impacts.push(clone(state.lastImpact)); }
+      }
+      if (!checkpoint && state.time >= Math.min(1.25, horizon) - fixedDt / 2) checkpoint = {
+        time: state.time, state: clone(state), audit: clone(postTick), remainingArea,
+      };
+      previous = { state, audit: postTick, remainingArea };
+    }
+
+    const finalAudit = audit.capture(transactionCase);
+    const finalArea = geometryArea(materialMassGeometry(state.material));
+    const finalBoundaryArea = geometryArea(state.material.geometry);
+    const finalDeformationGeometryArea = geometryArea(state.material.deformationGeometry || []);
+    const removedArea = Number(state.material.removedArea);
+    const removedVolume = Number(state.material.removedVolume);
+    const removedMass = Number(state.material.removedMass);
+    const width = Number(finalAudit.effectiveWeaponZOverlap);
+    const density = Number(finalAudit.materialDensity);
+    const currentMass = Number(finalAudit.targetBody?.mass);
+    const areaIdentity = Math.abs(removedArea - (initialArea - finalArea)) <= areaTolerance;
+    const deformationIdentity = deformationIdentityFailures.length === 0
+      && Math.abs(finalDeformationGeometryArea - Math.max(0, finalArea - finalBoundaryArea)) <= areaTolerance;
+    const volumeIdentity = Math.abs(removedVolume - removedArea * width) <= volumeTolerance;
+    const densityIdentity = Math.abs(removedMass - density * removedVolume) <= massTolerance;
+    // Rapier 0.20 stores the body mass in f32. Compare the live body against
+    // the correctly rounded representable remaining mass, while the detached
+    // chip ledger above remains double precision.
+    const expectedCurrentMass = Math.fround(initialMass - removedMass);
+    const bodyMassIdentity = Math.abs(currentMass - expectedCurrentMass) <= massTolerance;
+    const noDuplicateRemoval = areaIdentity && areaIdentityFailures.length === 0
+      && Math.abs(acceptedEvents.reduce((sum, event) => sum + Math.max(0, Number(event.freshArea) || 0), 0) - removedArea) <= areaTolerance;
+    const distinctToothOrders = [...new Set(acceptedEvents.map(event => event.toothOrder).filter(value => value != null))];
+    const historyRequired = teeth > 1 && (suite === 'matrix' || suite === 'history' || suite === 'duration');
+    const historyPass = !historyRequired || distinctToothOrders.length >= 2;
+    const toi = evaluateToi(acceptedEvents);
+    const ledgers = evaluateLedgers(acceptedEvents);
+    const penetrationLimit = .00008 + 1e-10;
+    const penetrationPass = Object.values(acceptedPeak).every(value => value <= penetrationLimit);
+    const episodeEnergyPass = impacts.every(impact => impact.energyConverged === true
+      && finite(impact.numericalEnergyGain) && finite(impact.energyTolerance)
+      && Number(impact.numericalEnergyGain) <= Number(impact.energyTolerance) + 1e-12);
+    const runtimeIsMaterial = state.physics.runtimeContactMode === 'traceable-cutting'
+      && state.physics.materialCuttingRequested === true
+      && state.physics.materialCuttingEnabled === true
+      && state.physics.traceableCuttingContinuousToiEnabled === true;
+    const reachedHorizon = state.time >= horizon - fixedDt - 1e-12;
+    const noStops = !state.physics.solverDomainStopped && !state.physics.modelDomainStopped;
+    const actualCadToothCount = state.activeGeometry.weapon.toothCount;
+    const geometryIdentityPass = weapon !== 'cad' || actualCadToothCount === teeth;
+    const removalObserved = removedArea > areaTolerance && acceptedEvents.length > 0;
+
+    let rollback = null;
+    if (transactionCase) {
+      const injection = audit.failureInjectionStatus();
+      const injectedToi = evaluateToi(injection.last ? [injection.last] : []);
+      const rollbackBeforeComparable = rollbackComparable(rollbackBefore);
+      const rollbackAfterComparable = rollbackComparable(rollbackAfter);
+      rollback = {
+        injection,
+        injectionFired: injection.fired > 0,
+        terminalMaterialStop: state.physics.modelDomainStopped === true,
+        worldBytesEqual: worldBytesEqual(rollbackBefore?.worldBytes, rollbackAfter?.worldBytes),
+        stateEqual: rollbackBefore && rollbackAfter
+          ? stable(rollbackBeforeComparable) === stable(rollbackAfterComparable)
+          : false,
+        stateDifferences: rollbackBefore && rollbackAfter
+          ? Object.keys(rollbackBeforeComparable).filter((key) => stable(rollbackBeforeComparable[key]) !== stable(rollbackAfterComparable[key]))
+            .map((key) => ({ key, before: rollbackBeforeComparable[key], after: rollbackAfterComparable[key] }))
+          : [],
+        toiAudit: injectedToi,
+      };
+      rollback.pass = rollback.injectionFired && rollback.terminalMaterialStop
+        && rollback.worldBytesEqual && rollback.stateEqual && rollback.toiAudit.pass;
+    }
+
+    const normalGates = {
+      geometryIdentity: geometryIdentityPass,
+      runtimeTraceableMaterial: runtimeIsMaterial,
+      reachedHorizon,
+      noDomainStop: noStops,
+      removalObserved,
+      monotonic: monotonicFailures.length === 0,
+      areaIdentity,
+      deformationIdentity,
+      volumeIdentity,
+      densityIdentity,
+      bodyMassIdentity,
+      noDuplicateRemoval,
+      grooveHistory: historyPass,
+      toiOrder: toi.pass,
+      momentumEnergyLedgers: ledgers.pass,
+      acceptedPenetration80um: penetrationPass,
+      completedEpisodeEnergy: episodeEnergyPass,
+      rollback: true,
+    };
+    const gates = transactionCase ? {
+      geometryIdentity: geometryIdentityPass,
+      runtimeTraceableMaterial: runtimeIsMaterial,
+      provisionalRemovalReached: Boolean(rollback?.injectionFired),
+      earliestToiAudited: Boolean(rollback?.toiAudit?.pass),
+      byteExactTransactionRollback: Boolean(rollback?.pass),
+      acceptedPenetration80um: penetrationPass,
+    } : normalGates;
+    const pass = Object.values(gates).every(Boolean);
+    const expectedBaselineFailureObserved = suite === 'baseline'
+      && !pass
+      && state.physics.modelDomainStopped === true
+      && removedArea === 0
+      && state.physics.materialCuttingEnabled === false;
+    return {
+      pass,
+      expectedBaselineFailureObserved,
+      suite, variant, weapon, fork, teeth, ratio, angle, horizon, fixedDtMs,
+      testedSource: audit.sourceMeta(),
+      geometry: { expectedTeeth: teeth, actualCadToothCount, active: state.activeGeometry },
+      runtime: {
+        time: state.time, ticks, failureDomain: state.failureDomain,
+        solverDomainStopped: state.physics.solverDomainStopped,
+        modelDomainStopped: state.physics.modelDomainStopped,
+        materialCuttingRequested: state.physics.materialCuttingRequested,
+        materialCuttingEnabled: state.physics.materialCuttingEnabled,
+        traceableCuttingContinuousToiEnabled: state.physics.traceableCuttingContinuousToiEnabled,
+        runtimeContactMode: state.physics.runtimeContactMode,
+        lastFailure: state.physics.lastFailure,
+      },
+      gates,
+      material: {
+        initialArea, finalArea, finalBoundaryArea, finalDeformationGeometryArea,
+        removedArea, removedVolume, removedMass,
+        effectiveWeaponZOverlap: width, density, initialMass, currentMass, expectedCurrentMass,
+        areaTolerance, volumeTolerance, massTolerance,
+        distinctToothOrders, acceptedEventCount: acceptedEvents.length,
+      },
+      acceptedPeak,
+      rejectedPeak,
+      monotonicFailures: monotonicFailures.slice(0, 32),
+      areaIdentityFailures: areaIdentityFailures.slice(0, 32),
+      deformationIdentityFailures: deformationIdentityFailures.slice(0, 32),
+      toi,
+      ledgers,
+      rollback,
+      impacts,
+      acceptedEvents,
+      checkpoint,
+      finalState: state,
+    };
+  }
+
+  frame.addEventListener('load', async () => {
+    try {
+      for (let tries = 0; tries < 300 && !frame.contentWindow.BiteSim; tries += 1) await new Promise(resolve => setTimeout(resolve, 20));
+      out.textContent = JSON.stringify(await run());
+    } catch (error) {
+      out.textContent = JSON.stringify({ pass: false, suite, weapon, fork, teeth, ratio, angle, horizon, fixedDtMs, error: String(error?.stack || error) });
+    }
+  }, { once: true });
+})();
+</script>

@@ -1,0 +1,6 @@
+work/*.json
+work/*.log
+work/*.txt
+work/.edge-*
+work/edge-*
+
